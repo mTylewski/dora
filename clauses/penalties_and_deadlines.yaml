@@ -1,0 +1,130 @@
+# Clause pattern library (CLAUDE.md, section 7).
+# Starter descriptions of clause patterns commonly questioned in development agreements.
+# `source` must be filled in by the author / lawyer (UOKiK decision, register entry, judgment).
+# Do not add case numbers or dates that have not been checked. verified: true only after review.
+
+- id: penalty-cap-percent
+  title: Limit kary umownej jako procent ceny
+  pattern_description: Łączna kara za opóźnienie dewelopera ograniczona do stałego procentu ceny, niezależnie od długości opóźnienia.
+  why_risky: Po osiągnięciu limitu dalsze opóźnienie nie powoduje żadnych konsekwencji dla dewelopera, co może rażąco naruszać interes nabywcy, zwłaszcza gdy kary nabywcy nie są analogicznie ograniczone.
+  source: "uzupełnić"
+  verified: false
+
+- id: penalty-cap-amount
+  title: Limit kary umownej jako kwota
+  pattern_description: Kara za opóźnienie dewelopera ograniczona do stałej kwoty.
+  why_risky: Jak wyżej — limit może czynić karę iluzoryczną przy dłuższym opóźnieniu.
+  source: "uzupełnić"
+  verified: false
+
+- id: penalty-asymmetry
+  title: Nierówne kary dla stron
+  pattern_description: Kara należna nabywcy (np. za opóźnienie wydania lokalu) jest wyraźnie niższa lub węższa niż kara lub odsetki obciążające nabywcę (np. za opóźnienie w płatnościach).
+  why_risky: Nierównowaga praw i obowiązków stron na niekorzyść konsumenta.
+  source: "uzupełnić"
+  verified: false
+
+- id: penalty-symbolic-rate
+  title: Symboliczna stawka kary
+  pattern_description: Dzienna stawka kary jest bardzo niska w stosunku do ceny lokalu (np. kilka złotych dziennie lub ułamek promila ceny).
+  why_risky: Kara nie pełni funkcji kompensacyjnej ani dyscyplinującej.
+  source: "uzupełnić"
+  verified: false
+
+- id: penalty-exclusive
+  title: Kara wyłączna — brak odszkodowania ponad karę
+  pattern_description: Nabywca nie może dochodzić odszkodowania przenoszącego wysokość zastrzeżonej kary umownej.
+  why_risky: Wyłącza lub ogranicza odpowiedzialność dewelopera za szkodę rzeczywiście poniesioną przez nabywcę (np. koszty najmu, odsetki od kredytu).
+  source: "uzupełnić"
+  verified: false
+
+- id: penalty-grace-period
+  title: Okres karencji przed naliczeniem kary
+  pattern_description: Kara naliczana dopiero po upływie określonej liczby dni lub miesięcy od terminu, a nie od dnia następującego po terminie.
+  why_risky: Faktycznie przesuwa termin umowny na korzyść dewelopera bez zmiany umowy.
+  source: "uzupełnić"
+  verified: false
+
+- id: penalty-conditional-on-demand
+  title: Kara uzależniona od dodatkowych warunków formalnych
+  pattern_description: Prawo do kary uzależnione od wezwania w określonej formie lub terminie, pod rygorem utraty prawa do kary.
+  why_risky: Utrudnia dochodzenie roszczeń i może prowadzić do utraty prawa z przyczyn formalnych.
+  source: "uzupełnić"
+  verified: false
+
+- id: penalty-set-off-only
+  title: Kara rozliczana wyłącznie przez potrącenie lub w określony sposób
+  pattern_description: Kara płatna dopiero przy umowie przenoszącej, wyłącznie przez potrącenie z ceną lub w innym trybie ograniczającym swobodę nabywcy.
+  why_risky: Odsuwa w czasie lub ogranicza możliwość uzyskania zapłaty kary.
+  source: "uzupełnić"
+  verified: false
+
+- id: exclusion-broad-force-majeure
+  title: Szeroka definicja siły wyższej
+  pattern_description: Do siły wyższej lub okoliczności wyłączających odpowiedzialność zaliczono zdarzenia zależne od dewelopera lub typowe ryzyko inwestycyjne (np. działania podwykonawców, warunki atmosferyczne, braki materiałów, trudności finansowe).
+  why_risky: Przerzuca na nabywcę ryzyko, które powinien ponosić profesjonalny deweloper.
+  source: "uzupełnić"
+  verified: false
+
+- id: exclusion-authorities
+  title: Wyłączenie odpowiedzialności za działania organów
+  pattern_description: Deweloper nie odpowiada za opóźnienie spowodowane opóźnieniami urzędów lub organów, bez ograniczenia do przyczyn od niego niezależnych.
+  why_risky: Może obejmować opóźnienia wynikające z błędów lub braków w dokumentacji dewelopera.
+  source: "uzupełnić"
+  verified: false
+
+- id: exclusion-utilities
+  title: Wyłączenie odpowiedzialności za przyłącza
+  pattern_description: Deweloper nie odpowiada za opóźnienie wynikające z działań gestorów sieci lub dostawców mediów.
+  why_risky: Organizacja przyłączy należy do typowych obowiązków dewelopera.
+  source: "uzupełnić"
+  verified: false
+
+- id: deadline-automatic-extension
+  title: Automatyczne przedłużenie terminu
+  pattern_description: Termin wydania lokalu lub zawarcia umowy przenoszącej ulega automatycznemu przedłużeniu o czas trwania określonych zdarzeń, bez aneksu i bez zgody nabywcy.
+  why_risky: Jednostronna zmiana kluczowego terminu umowy przez dewelopera.
+  source: "uzupełnić"
+  verified: false
+
+- id: deadline-unilateral-change
+  title: Jednostronna zmiana terminu przez dewelopera
+  pattern_description: Deweloper może zmienić termin przez zawiadomienie nabywcy.
+  why_risky: Pozbawia nabywcę realnego wpływu na termin, od którego zależy kara.
+  source: "uzupełnić"
+  verified: false
+
+- id: deadline-relative
+  title: Termin określony względnie
+  pattern_description: Termin wydania lub przeniesienia własności liczony od zdarzenia zależnego od dewelopera (np. od uzyskania pozwolenia na użytkowanie), bez daty granicznej.
+  why_risky: Uniemożliwia ustalenie, kiedy deweloper popada w opóźnienie.
+  source: "uzupełnić"
+  verified: false
+
+- id: waiver-in-protocol-or-deed
+  title: Zrzeczenie się roszczeń w protokole, akcie lub aneksie
+  pattern_description: Nabywca oświadcza w protokole odbioru, akcie przeniesienia własności lub aneksie przesuwającym termin (np. w zamian za rabat), że nie ma żadnych roszczeń wobec dewelopera lub zrzeka się roszczeń.
+  why_risky: Oświadczenie może być podnoszone przez dewelopera jako zrzeczenie się kar umownych; ocena jego skuteczności wymaga analizy prawnika.
+  source: "uzupełnić"
+  verified: false
+
+- id: handover-deemed
+  title: Fikcja wydania lub odbioru lokalu
+  pattern_description: Lokal uważa się za wydany lub odebrany mimo niestawienia się nabywcy, odmowy odbioru z powodu wad lub bez podpisania protokołu.
+  why_risky: Może sztucznie skracać okres opóźnienia dewelopera.
+  source: "uzupełnić"
+  verified: false
+
+- id: buyer-penalty-high
+  title: Wysokie kary lub odstępne obciążające nabywcę
+  pattern_description: Nabywca płaci wysokie kary lub traci znaczną część wpłat w razie odstąpienia lub opóźnienia w płatności.
+  why_risky: Rażąca nierównowaga w porównaniu z sankcjami dla dewelopera.
+  source: "uzupełnić"
+  verified: false
+
+- id: jurisdiction-developer-seat
+  title: Sąd właściwy według siedziby dewelopera
+  pattern_description: Spory rozstrzyga sąd właściwy dla siedziby dewelopera.
+  why_risky: Utrudnia konsumentowi dochodzenie roszczeń przed sądem właściwym według przepisów ogólnych.
+  source: "uzupełnić"
+  verified: false

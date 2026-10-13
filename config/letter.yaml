@@ -1,0 +1,17 @@
+# Demand letter settings. Firm data is filled in by the law firm during deployment.
+# Legal wording must be confirmed by a lawyer (verified: false until then).
+
+firm:
+  name: "[NAZWA KANCELARII]"
+  address: "[ADRES KANCELARII]"
+  lawyer: "[IMIĘ I NAZWISKO PEŁNOMOCNIKA]"
+  city: "[MIEJSCOWOŚĆ]"
+
+# Days to pay counted from receipt of the letter.
+payment_deadline_days: 14
+
+# Text inserted into the letter as the legal basis of the claim. Empty = placeholder for the lawyer.
+legal_basis:
+  text: ""
+  source: "uzupełnić"
+  verified: false

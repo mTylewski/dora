@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card narrow">
+  <h1>Kod weryfikacyjny</h1>
+  <p>Wpisz 6-cyfrowy kod z aplikacji uwierzytelniającej.</p>
+  <form method="post" action="/login/totp" class="stack">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Kod <input name="code" inputmode="numeric" pattern="[0-9 ]{6,7}" required autocomplete="one-time-code" autofocus></label>
+    <button>Zaloguj</button>
+  </form>
+</section>
+{% endblock %}

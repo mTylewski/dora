@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row-between">
+  <h1>Sprawy</h1>
+  <a class="button" href="/cases/new">Nowa sprawa</a>
+</div>
+<p class="muted">Sprawy są usuwane automatycznie po {{ retention }} dniach od utworzenia.</p>
+{% if cases %}
+<table class="grid">
+  <thead><tr><th>Sygnatura</th><th>Sprawa</th><th>Prawnik</th><th>Utworzona</th><th>Stan na dzień</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for c in cases %}
+    <tr>
+      <td>{{ c.case_number or "—" }}</td>
+      <td><a href="/cases/{{ c.id }}">{{ c.title }}</a></td>
+      <td>{{ lawyers.get(c.lawyer_id, "—") }}</td>
+      <td>{{ c.created_at.strftime("%d.%m.%Y %H:%M") }}</td>
+      <td>{{ c.as_of.strftime("%d.%m.%Y") }}</td>
+      <td><span class="badge status-{{ c.status }}">{{ status_labels.get(c.status, c.status) }}</span></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>Brak spraw.</p>
+{% endif %}
+{% endblock %}

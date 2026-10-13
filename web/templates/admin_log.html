@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Dziennik dostępu{% if case_id %} — sprawa {{ case_id }}{% endif %}</h1>
+<form method="get" class="row">
+  <input name="case_id" value="{{ case_id or '' }}" placeholder="id sprawy">
+  <button class="secondary">Filtruj</button>
+</form>
+<table class="grid">
+  <thead><tr><th>Czas (UTC)</th><th>Użytkownik</th><th>Sprawa</th><th>Akcja</th><th>IP</th></tr></thead>
+  <tbody>
+  {% for e in entries %}
+    <tr><td>{{ e.at.strftime("%Y-%m-%d %H:%M:%S") }}</td><td>{{ emails.get(e.user_id, "system") }}</td>
+      <td>{% if e.case_id %}<a href="/admin/log?case_id={{ e.case_id }}">{{ e.case_id[:8] }}</a>{% endif %}</td>
+      <td>{{ e.action }}</td><td>{{ e.ip or "" }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

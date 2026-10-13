@@ -1,0 +1,71 @@
+{
+  "$defs": {
+    "ClauseFlag": {
+      "additionalProperties": false,
+      "properties": {
+        "clause_id": {
+          "type": "string"
+        },
+        "quote": {
+          "type": "string"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "document_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reasoning": {
+          "type": "string"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        }
+      },
+      "required": [
+        "clause_id",
+        "quote",
+        "page",
+        "document_id",
+        "reasoning",
+        "confidence"
+      ],
+      "type": "object"
+    },
+    "Confidence": {
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ],
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "flags": {
+      "items": {
+        "$ref": "#/$defs/ClauseFlag"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "flags"
+  ],
+  "type": "object"
+}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Szablony pism</h1>
+<section class="card">
+  <p>Każdy szablon to jeden rodzaj pisma do wyboru w kreatorze (np. „Wezwanie przedsądowe”, „Ostateczne wezwanie do zapłaty”, „Odpowiedź na stanowisko dewelopera”). Treść stałą pisma przygotowuje kancelaria w szablonie; system uzupełnia pola z danych sprawy.</p>
+  {% if uploaded %}<p class="alert info">Dodano szablon „{{ uploaded }}”. Jest dostępny w kreatorze pism.</p>{% endif %}
+  {% for w in warnings or [] %}<p class="alert warn">{{ w }}</p>{% endfor %}
+  <table class="grid">
+    <thead><tr><th>Rodzaj pisma</th><th>Opis</th><th></th></tr></thead>
+    <tbody>
+    {% for t in templates %}
+      <tr><td><strong>{{ t.name }}</strong></td><td class="small">{{ t.description }}</td>
+        <td class="row">
+          <a href="/admin/templates/{{ t.id }}/download">pobierz</a>
+          {% if not t.builtin %}
+          <form method="post" action="/admin/templates/{{ t.id }}/deactivate" class="inline">
+            <input type="hidden" name="csrf" value="{{ csrf }}">
+            <label class="small"><input type="checkbox" required> potwierdzam</label>
+            <button class="danger">Usuń</button>
+          </form>
+          {% endif %}
+        </td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+<section class="card">
+  <h2>Dodaj szablon</h2>
+  <form method="post" action="/admin/templates" enctype="multipart/form-data" class="stack">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Nazwa rodzaju pisma <input name="name" required maxlength="200" placeholder="np. Ostateczne wezwanie do zapłaty"></label>
+    <label>Opis (kiedy go używać) <input name="description" maxlength="500"></label>
+    <label>Plik .docx <input type="file" name="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required></label>
+    <button>Wgraj szablon</button>
+  </form>
+</section>
+<section class="card">
+  <h2>Jak przygotować szablon</h2>
+  <p>Pobierz szablon domyślny jako punkt wyjścia albo weź papier firmowy kancelarii i wstaw pola w podwójnych nawiasach klamrowych. Pole może stać w zdaniu („Sygn.: {{ "{{" }}case_number{{ "}}" }}”) albo w osobnym akapicie. Formatowanie akapitu zostaje zachowane.</p>
+  <table class="grid">
+    <thead><tr><th>Pole</th><th>Treść</th></tr></thead>
+    <tbody>
+    {% for key, label in placeholders.items() %}
+      <tr><td><code>{{ "{{" }}{{ key }}{{ "}}" }}</code></td><td>{{ label }}</td></tr>
+    {% endfor %}
+      <tr><td><code>{{ "{{" }}{{ table_placeholder }}{{ "}}" }}</code></td><td>Wiersz tabeli z wyliczeniem: wstaw w pierwszej komórce wiersza tabeli o 4 kolumnach (tytuł, okres, dni, kwota). System powieli wiersz dla każdego opóźnienia.</td></tr>
+    </tbody>
+  </table>
+  <p class="muted small">Pole <code>{{ "{{" }}justification{{ "}}" }}</code> uruchamia przygotowanie projektu uzasadnienia przez model. Szablon bez tego pola jest wypełniany wyłącznie danymi. System nie dodaje treści prawnych.</p>
+</section>
+{% endblock %}

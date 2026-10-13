@@ -1,0 +1,334 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "developer_name": {
+      "$ref": "#/$defs/Field",
+      "description": "value: developer company name exactly as in the document, or null"
+    },
+    "agreement_reference": {
+      "$ref": "#/$defs/Field",
+      "description": "value: notarial deed number of the development agreement, e.g. 'Rep. A nr 1234/2021', or null"
+    },
+    "agreement_date": {
+      "$ref": "#/$defs/Field",
+      "description": "value: date string YYYY-MM-DD or null"
+    },
+    "price_gross": {
+      "$ref": "#/$defs/Field",
+      "description": "value: JSON number in PLN, e.g. 512340.5, or null"
+    },
+    "handover_deadline": {
+      "$ref": "#/$defs/Field",
+      "description": "value: date string YYYY-MM-DD or null"
+    },
+    "transfer_deadline": {
+      "$ref": "#/$defs/Field",
+      "description": "value: date string YYYY-MM-DD or null"
+    },
+    "annex_deadlines": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Annex"
+      },
+      "description": "one item per deadline changed by an annex"
+    },
+    "penalty_basis": {
+      "$ref": "#/$defs/Field",
+      "description": "value: one of percent_of_price_per_day, fixed_per_day, statutory_interest, other; or null"
+    },
+    "penalty_rate": {
+      "$ref": "#/$defs/Field",
+      "description": "value: JSON number (daily fraction, e.g. 0.0002, or PLN per day) or null"
+    },
+    "penalty_cap": {
+      "$ref": "#/$defs/Cap",
+      "description": "value: {type: percent|amount, value: number} or null"
+    },
+    "penalty_events": {
+      "$ref": "#/$defs/Events",
+      "description": "value: list of handover_delay / transfer_delay, or null"
+    },
+    "liability_exclusions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Field"
+      },
+      "description": "one item per exclusion clause; value: short Polish label (string)"
+    },
+    "exclusive_penalty_clause": {
+      "$ref": "#/$defs/Field",
+      "description": "value: true, false or null"
+    },
+    "waiver_of_claims": {
+      "$ref": "#/$defs/Field",
+      "description": "value: true, false or null"
+    },
+    "actual_handover_date": {
+      "$ref": "#/$defs/Field",
+      "description": "value: date string YYYY-MM-DD or null"
+    },
+    "actual_transfer_date": {
+      "$ref": "#/$defs/Field",
+      "description": "value: date string YYYY-MM-DD or null"
+    }
+  },
+  "required": [
+    "developer_name",
+    "agreement_reference",
+    "agreement_date",
+    "price_gross",
+    "handover_deadline",
+    "transfer_deadline",
+    "annex_deadlines",
+    "penalty_basis",
+    "penalty_rate",
+    "penalty_cap",
+    "penalty_events",
+    "liability_exclusions",
+    "exclusive_penalty_clause",
+    "waiver_of_claims",
+    "actual_handover_date",
+    "actual_transfer_date"
+  ],
+  "$defs": {
+    "Field": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "page": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "document_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "confidence": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ]
+        }
+      },
+      "required": [
+        "value",
+        "quote",
+        "page",
+        "document_id",
+        "confidence"
+      ]
+    },
+    "Events": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string",
+            "enum": [
+              "handover_delay",
+              "transfer_delay"
+            ]
+          }
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "page": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "document_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "confidence": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ]
+        }
+      },
+      "required": [
+        "value",
+        "quote",
+        "page",
+        "document_id",
+        "confidence"
+      ]
+    },
+    "Cap": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "percent",
+                    "amount"
+                  ]
+                },
+                "value": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "type",
+                "value"
+              ]
+            }
+          ]
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "page": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "document_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "confidence": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ]
+        }
+      },
+      "required": [
+        "value",
+        "quote",
+        "page",
+        "document_id",
+        "confidence"
+      ]
+    },
+    "Annex": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "date": {
+                  "type": "string"
+                },
+                "field": {
+                  "type": "string",
+                  "enum": [
+                    "handover_deadline",
+                    "transfer_deadline"
+                  ]
+                },
+                "annex_no": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "date",
+                "field",
+                "annex_no"
+              ]
+            }
+          ]
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "page": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "document_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "confidence": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ]
+        }
+      },
+      "required": [
+        "value",
+        "quote",
+        "page",
+        "document_id",
+        "confidence"
+      ]
+    }
+  }
+}

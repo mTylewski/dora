@@ -1,0 +1,774 @@
+{
+  "$defs": {
+    "AnnexDeadline": {
+      "additionalProperties": false,
+      "properties": {
+        "date": {
+          "format": "date",
+          "title": "Date",
+          "type": "string"
+        },
+        "field": {
+          "enum": [
+            "handover_deadline",
+            "transfer_deadline"
+          ],
+          "title": "Field",
+          "type": "string"
+        },
+        "annex_no": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Annex number as written in the document; null if not numbered.",
+          "title": "Annex No"
+        }
+      },
+      "required": [
+        "date",
+        "field"
+      ],
+      "title": "AnnexDeadline",
+      "type": "object"
+    },
+    "Confidence": {
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ],
+      "title": "Confidence",
+      "type": "string"
+    },
+    "Field_AnnexDeadline_": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AnnexDeadline"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Extracted value; null when the document does not state it. Never guess."
+        },
+        "quote": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Verbatim fragment of the document supporting the value; null when value is null.",
+          "title": "Quote"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "1-based page number in the source document.",
+          "title": "Page"
+        },
+        "document_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Id of the source document, e.g. doc_1.",
+          "title": "Document Id"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence",
+          "default": "low"
+        },
+        "needs_review": {
+          "default": false,
+          "description": "Set by code after quote verification, never by the model.",
+          "title": "Needs Review",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "value",
+        "quote"
+      ],
+      "title": "Field[AnnexDeadline]",
+      "type": "object"
+    },
+    "Field_Decimal_": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Extracted value; null when the document does not state it. Never guess.",
+          "title": "Value"
+        },
+        "quote": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Verbatim fragment of the document supporting the value; null when value is null.",
+          "title": "Quote"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "1-based page number in the source document.",
+          "title": "Page"
+        },
+        "document_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Id of the source document, e.g. doc_1.",
+          "title": "Document Id"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence",
+          "default": "low"
+        },
+        "needs_review": {
+          "default": false,
+          "description": "Set by code after quote verification, never by the model.",
+          "title": "Needs Review",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "value",
+        "quote"
+      ],
+      "title": "Field[Decimal]",
+      "type": "object"
+    },
+    "Field_PenaltyBasis_": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PenaltyBasis"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Extracted value; null when the document does not state it. Never guess."
+        },
+        "quote": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Verbatim fragment of the document supporting the value; null when value is null.",
+          "title": "Quote"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "1-based page number in the source document.",
+          "title": "Page"
+        },
+        "document_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Id of the source document, e.g. doc_1.",
+          "title": "Document Id"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence",
+          "default": "low"
+        },
+        "needs_review": {
+          "default": false,
+          "description": "Set by code after quote verification, never by the model.",
+          "title": "Needs Review",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "value",
+        "quote"
+      ],
+      "title": "Field[PenaltyBasis]",
+      "type": "object"
+    },
+    "Field_PenaltyCap_": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PenaltyCap"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Extracted value; null when the document does not state it. Never guess."
+        },
+        "quote": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Verbatim fragment of the document supporting the value; null when value is null.",
+          "title": "Quote"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "1-based page number in the source document.",
+          "title": "Page"
+        },
+        "document_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Id of the source document, e.g. doc_1.",
+          "title": "Document Id"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence",
+          "default": "low"
+        },
+        "needs_review": {
+          "default": false,
+          "description": "Set by code after quote verification, never by the model.",
+          "title": "Needs Review",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "value",
+        "quote"
+      ],
+      "title": "Field[PenaltyCap]",
+      "type": "object"
+    },
+    "Field_bool_": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Extracted value; null when the document does not state it. Never guess.",
+          "title": "Value"
+        },
+        "quote": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Verbatim fragment of the document supporting the value; null when value is null.",
+          "title": "Quote"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "1-based page number in the source document.",
+          "title": "Page"
+        },
+        "document_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Id of the source document, e.g. doc_1.",
+          "title": "Document Id"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence",
+          "default": "low"
+        },
+        "needs_review": {
+          "default": false,
+          "description": "Set by code after quote verification, never by the model.",
+          "title": "Needs Review",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "value",
+        "quote"
+      ],
+      "title": "Field[bool]",
+      "type": "object"
+    },
+    "Field_date_": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Extracted value; null when the document does not state it. Never guess.",
+          "title": "Value"
+        },
+        "quote": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Verbatim fragment of the document supporting the value; null when value is null.",
+          "title": "Quote"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "1-based page number in the source document.",
+          "title": "Page"
+        },
+        "document_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Id of the source document, e.g. doc_1.",
+          "title": "Document Id"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence",
+          "default": "low"
+        },
+        "needs_review": {
+          "default": false,
+          "description": "Set by code after quote verification, never by the model.",
+          "title": "Needs Review",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "value",
+        "quote"
+      ],
+      "title": "Field[date]",
+      "type": "object"
+    },
+    "Field_list_PenaltyEvent__": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/PenaltyEvent"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Extracted value; null when the document does not state it. Never guess.",
+          "title": "Value"
+        },
+        "quote": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Verbatim fragment of the document supporting the value; null when value is null.",
+          "title": "Quote"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "1-based page number in the source document.",
+          "title": "Page"
+        },
+        "document_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Id of the source document, e.g. doc_1.",
+          "title": "Document Id"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence",
+          "default": "low"
+        },
+        "needs_review": {
+          "default": false,
+          "description": "Set by code after quote verification, never by the model.",
+          "title": "Needs Review",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "value",
+        "quote"
+      ],
+      "title": "Field[list[PenaltyEvent]]",
+      "type": "object"
+    },
+    "Field_str_": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Extracted value; null when the document does not state it. Never guess.",
+          "title": "Value"
+        },
+        "quote": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Verbatim fragment of the document supporting the value; null when value is null.",
+          "title": "Quote"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "1-based page number in the source document.",
+          "title": "Page"
+        },
+        "document_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Id of the source document, e.g. doc_1.",
+          "title": "Document Id"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence",
+          "default": "low"
+        },
+        "needs_review": {
+          "default": false,
+          "description": "Set by code after quote verification, never by the model.",
+          "title": "Needs Review",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "value",
+        "quote"
+      ],
+      "title": "Field[str]",
+      "type": "object"
+    },
+    "PenaltyBasis": {
+      "enum": [
+        "percent_of_price_per_day",
+        "fixed_per_day",
+        "statutory_interest",
+        "other"
+      ],
+      "title": "PenaltyBasis",
+      "type": "string"
+    },
+    "PenaltyCap": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "percent",
+            "amount"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            }
+          ],
+          "description": "For percent: fraction of price (0.05 = 5%). For amount: PLN.",
+          "title": "Value"
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ],
+      "title": "PenaltyCap",
+      "type": "object"
+    },
+    "PenaltyEvent": {
+      "enum": [
+        "handover_delay",
+        "transfer_delay"
+      ],
+      "title": "PenaltyEvent",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Case card extracted from all documents of one case.",
+  "properties": {
+    "developer_name": {
+      "$ref": "#/$defs/Field_str_",
+      "description": "Full name of the developer company as written in the agreement."
+    },
+    "agreement_reference": {
+      "$ref": "#/$defs/Field_str_",
+      "description": "Notarial deed reference of the development agreement, e.g. 'Rep. A nr 1234/2021'."
+    },
+    "agreement_date": {
+      "$ref": "#/$defs/Field_date_",
+      "description": "Date the development agreement was concluded (signed before the notary)."
+    },
+    "price_gross": {
+      "$ref": "#/$defs/Field_Decimal_",
+      "description": "Gross price of the unit in PLN."
+    },
+    "handover_deadline": {
+      "$ref": "#/$defs/Field_date_",
+      "description": "Contractual deadline to hand over the unit."
+    },
+    "transfer_deadline": {
+      "$ref": "#/$defs/Field_date_",
+      "description": "Contractual deadline to conclude the ownership transfer agreement."
+    },
+    "annex_deadlines": {
+      "description": "Deadlines changed by annexes.",
+      "items": {
+        "$ref": "#/$defs/Field_AnnexDeadline_"
+      },
+      "title": "Annex Deadlines",
+      "type": "array"
+    },
+    "penalty_basis": {
+      "$ref": "#/$defs/Field_PenaltyBasis_"
+    },
+    "penalty_rate": {
+      "$ref": "#/$defs/Field_Decimal_",
+      "description": "Daily rate as a fraction (0.0002 = 0.02% per day) or PLN per day for fixed_per_day."
+    },
+    "penalty_cap": {
+      "$ref": "#/$defs/Field_PenaltyCap_",
+      "description": "Cap on the penalty; value null when no cap."
+    },
+    "penalty_events": {
+      "$ref": "#/$defs/Field_list_PenaltyEvent__",
+      "description": "Delays for which the contractual penalty is due."
+    },
+    "liability_exclusions": {
+      "description": "Clauses excluding developer liability; value is a short label, quote the clause.",
+      "items": {
+        "$ref": "#/$defs/Field_str_"
+      },
+      "title": "Liability Exclusions",
+      "type": "array"
+    },
+    "exclusive_penalty_clause": {
+      "$ref": "#/$defs/Field_bool_",
+      "description": "True when the buyer may not claim damages exceeding the penalty."
+    },
+    "waiver_of_claims": {
+      "$ref": "#/$defs/Field_bool_",
+      "description": "True when the buyer waived claims (usually in the transfer deed)."
+    },
+    "actual_handover_date": {
+      "$ref": "#/$defs/Field_date_",
+      "description": "Actual handover date from the protocol."
+    },
+    "actual_transfer_date": {
+      "$ref": "#/$defs/Field_date_",
+      "description": "Actual transfer date from the deed."
+    }
+  },
+  "required": [
+    "developer_name",
+    "agreement_reference",
+    "agreement_date",
+    "price_gross",
+    "handover_deadline",
+    "transfer_deadline",
+    "penalty_basis",
+    "penalty_rate",
+    "penalty_cap",
+    "penalty_events",
+    "exclusive_penalty_clause",
+    "waiver_of_claims",
+    "actual_handover_date",
+    "actual_transfer_date"
+  ],
+  "title": "Extraction",
+  "type": "object"
+}

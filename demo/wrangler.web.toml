@@ -1,0 +1,8 @@
+# Static site of the demo (the browser app), served by Cloudflare Workers static assets.
+# Deploy: npm run deploy:web  (builds with VITE_API_URL pointing at the dora-api Worker)
+name = "dora-demo"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+[assets]
+directory = "web/dist"

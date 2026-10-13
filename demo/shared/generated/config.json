@@ -1,0 +1,43 @@
+{
+  "models": {
+    "classify": {
+      "model": "claude-haiku-4-5-20251001",
+      "max_tokens": 2000,
+      "refusal_fallback": false
+    },
+    "extract": {
+      "model": "claude-sonnet-5-5",
+      "effort": "high",
+      "max_tokens": 32000,
+      "refusal_fallback": true
+    },
+    "clauses": {
+      "model": "claude-opus-5-5",
+      "effort": "high",
+      "max_tokens": 32000,
+      "refusal_fallback": true
+    },
+    "letter": {
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "max_tokens": 8000,
+      "refusal_fallback": true
+    }
+  },
+  "calculator": {
+    "include_actual_date": true,
+    "verified": false,
+    "interest_year_days": 365,
+    "statutory_interest_kind": "late_payment",
+    "new_act_from": "2022-07-01",
+    "new_act_verified": false
+  },
+  "statutory_interest": {
+    "statutory": [],
+    "late_payment": []
+  },
+  "letter": {
+    "payment_deadline_days": 14,
+    "legal_basis": ""
+  }
+}

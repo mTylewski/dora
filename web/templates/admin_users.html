@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Użytkownicy</h1>
+{% if created %}
+<section class="card">
+  <h2>Utworzono: {{ created.email }}</h2>
+  <p>Przekaż użytkownikowi kod QR do aplikacji uwierzytelniającej (np. Aegis, Google Authenticator). Kod nie będzie pokazany ponownie.</p>
+  <div class="qr">{{ qr_svg|safe }}</div>
+  <p class="muted small">Ręcznie: <code>{{ totp_uri }}</code></p>
+</section>
+{% endif %}
+<table class="grid">
+  <thead><tr><th>E-mail</th><th>Rola</th><th>Aktywny</th><th></th></tr></thead>
+  <tbody>
+  {% for u in users %}
+    <tr><td>{{ u.email }}</td><td>{{ u.role }}</td><td>{{ "tak" if u.active else "nie" }}</td>
+      <td>{% if u.id != user.id %}
+        <form method="post" action="/admin/users/{{ u.id }}/toggle" class="inline">
+          <input type="hidden" name="csrf" value="{{ csrf }}"><button class="secondary">{{ "Zablokuj" if u.active else "Odblokuj" }}</button>
+        </form>{% endif %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<section class="card">
+  <h2>Nowy użytkownik</h2>
+  <form method="post" action="/admin/users" class="stack">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>E-mail <input type="email" name="email" required></label>
+    <label>Hasło startowe (min. 12 znaków) <input type="password" name="password" minlength="12" required autocomplete="new-password"></label>
+    <label>Rola <select name="role"><option value="lawyer">prawnik</option><option value="admin">administrator</option></select></label>
+    <button>Utwórz</button>
+  </form>
+</section>
+{% endblock %}

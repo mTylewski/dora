@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h1>Nowa sprawa</h1>
+  <form method="post" action="/cases" enctype="multipart/form-data" class="stack" data-busy="Przesyłanie plików…">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Nazwa sprawy (bez danych osobowych, np. sygnatura wewnętrzna)
+      <input name="title" required maxlength="200">
+    </label>
+    <div class="row">
+      <label>Sygnatura sprawy <input name="case_number" value="{{ case_number }}" maxlength="64"></label>
+      <label>Prawnik prowadzący
+        <select name="lawyer_id">
+          <option value="">— brak —</option>
+          {% for lw in lawyers %}<option value="{{ lw.id }}" {% if lw.id == own_lawyer_id %}selected{% endif %}>{{ lw.full_name }}, {{ lw.title }}</option>{% endfor %}
+        </select>
+      </label>
+    </div>
+    <label>Wyliczenie na dzień
+      <input type="date" name="as_of" value="{{ today }}" required>
+    </label>
+    <label>Dokumenty PDF (umowa deweloperska, aneksy, protokół odbioru, akt przeniesienia własności)
+      <input type="file" name="files" accept="application/pdf" multiple required>
+    </label>
+    <p class="muted">Pliki są przechowywane na serwerze kancelarii. Do usługi modelu językowego trafia wyłącznie zanonimizowany tekst, po zatwierdzeniu anonimizacji.</p>
+    <button>Prześlij i odczytaj</button>
+  </form>
+</section>
+{% endblock %}

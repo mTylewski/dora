@@ -1,0 +1,49 @@
+# Build, test, push and sign the production image.
+# Secrets: COSIGN_PRIVATE_KEY, COSIGN_PASSWORD (cosign generate-key-pair). The public key
+# goes to the law firm's server (/etc/claims/cosign.pub) during installation.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+
+      - name: Tests
+        run: |
+          pip install ".[dev]"
+          pytest --cov
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+
+      - uses: sigstore/cosign-installer@v3
+
+      - name: Sign image by digest
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          cosign sign --yes --key env://COSIGN_PRIVATE_KEY \
+            ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}
+          echo "Release: ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}" >> "$GITHUB_STEP_SUMMARY"

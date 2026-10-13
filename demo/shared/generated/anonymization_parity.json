@@ -1,0 +1,1148 @@
+{
+  "cases": [
+    {
+      "name": "komparycja_malzonkowie",
+      "documents": {
+        "d": [
+          "Pani Katarzyna Zmyślona, córka Adama i Ewy, PESEL 85071512348, legitymująca się dowodem osobistym AXB912345, oraz Pan Bartłomiej Zmyślony, syn Jana, PESEL 92030267892, legitymujący się dowodem osobistym DEF665432, małżonkowie zamieszkali przy ul. Jasnej 7/12, 30-001 Kraków, zwani dalej Nabywcą. Nabywca Katarzyna Zmyślona oraz Bartłomiejowi Zmyślonemu doręczono kopię umowy."
+        ]
+      },
+      "secrets": [
+        "85071512348",
+        "92030267892",
+        "AXB912345",
+        "DEF665432",
+        "Katarzyna",
+        "Zmyślona",
+        "Bartłomiej",
+        "Zmyślony",
+        "Zmyślonemu",
+        "Bartłomiejowi",
+        "Jasnej 7/12",
+        "30-001"
+      ],
+      "expected": {
+        "d": [
+          "Pani [OSOBA_1], córka [RODZICE_1], PESEL [PESEL_1], legitymująca się dowodem osobistym [DOWOD_1], oraz Pan [OSOBA_2.1] [OSOBA_1.1], syn [RODZICE_2], PESEL [PESEL_2], legitymujący się dowodem osobistym [DOWOD_2], małżonkowie zamieszkali przy [ADRES_1], [KOD_1] Kraków, zwani dalej Nabywcą. Nabywca [OSOBA_1] oraz [OSOBA_2.2] [OSOBA_1.2] doręczono kopię umowy."
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Katarzyna Zmyślona",
+        "[OSOBA_2]": "Bartłomiej Zmyślony",
+        "[PESEL_1]": "85071512348",
+        "[PESEL_2]": "92030267892",
+        "[DOWOD_1]": "AXB912345",
+        "[DOWOD_2]": "DEF665432",
+        "[RODZICE_1]": "Adama i Ewy",
+        "[RODZICE_2]": "Jana",
+        "[KOD_1]": "30-001",
+        "[ADRES_1]": "ul. Jasnej 7/12",
+        "[OSOBA_2.1]": "Bartłomiej",
+        "[OSOBA_1.1]": "Zmyślony",
+        "[OSOBA_2.2]": "Bartłomiejowi",
+        "[OSOBA_1.2]": "Zmyślonemu"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Katarzyna Zmyślona",
+          "role": "buyer",
+          "address": null
+        },
+        {
+          "token": "[OSOBA_2]",
+          "name": "Bartłomiej Zmyślony",
+          "role": "buyer",
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "rachunek_i_kontakt",
+      "documents": {
+        "d": [
+          "Wpłaty będą dokonywane na rachunek powierniczy nr PL 46 1240 1037 0000 1234 5678 9012. Korespondencję należy kierować na adres e-mail k.zmyslona@example.org lub telefonicznie: +48 501 222 333. Kontakt z Panią Haliną Fikcyjną: tel. 601-444-555."
+        ]
+      },
+      "secrets": [
+        "PL 46 1240 1037 0000 1234 5678 9012",
+        "k.zmyslona@example.org",
+        "501 222 333",
+        "601-444-555",
+        "Haliną",
+        "Fikcyjną"
+      ],
+      "expected": {
+        "d": [
+          "Wpłaty będą dokonywane na rachunek powierniczy nr [KONTO_1]. Korespondencję należy kierować na adres e-mail [EMAIL_1] lub telefonicznie: [TELEFON_1]. Kontakt z Panią [OSOBA_1]: tel. [TELEFON_2]."
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Haliną Fikcyjną",
+        "[EMAIL_1]": "k.zmyslona@example.org",
+        "[KONTO_1]": "PL 46 1240 1037 0000 1234 5678 9012",
+        "[TELEFON_1]": "+48 501 222 333",
+        "[TELEFON_2]": "601-444-555"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Haliną Fikcyjną",
+          "role": null,
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "akt_notarialny",
+      "documents": {
+        "d": [
+          "Stawająca Pani Halina Fikcyjna, PESEL 77123104562, oświadcza, że lokal opisany w księdze wieczystej KR1P/00098765/8 został jej wydany. Haliny Fikcyjnej tożsamość notariusz ustalił na podstawie dowodu osobistego. Sprzedający: Budowa Test S.A., NIP: 527-123-45-63. Fikcyjna nie zgłasza żadnych roszczeń."
+        ]
+      },
+      "secrets": [
+        "77123104562",
+        "KR1P/00098765/8",
+        "Halina",
+        "Fikcyjna",
+        "Haliny",
+        "Fikcyjnej"
+      ],
+      "expected": {
+        "d": [
+          "Stawająca Pani [OSOBA_1], PESEL [PESEL_1], oświadcza, że lokal opisany w księdze wieczystej [KW_1] został jej wydany. [OSOBA_1.1] tożsamość notariusz ustalił na podstawie dowodu osobistego. Sprzedający: [OSOBA_2] S.A., NIP: [NIP_1]. [OSOBA_1.2] nie zgłasza żadnych roszczeń."
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Halina Fikcyjna",
+        "[OSOBA_2]": "Budowa Test",
+        "[KW_1]": "KR1P/00098765/8",
+        "[PESEL_1]": "77123104562",
+        "[NIP_1]": "527-123-45-63",
+        "[OSOBA_1.1]": "Haliny Fikcyjnej",
+        "[OSOBA_1.2]": "Fikcyjna"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Halina Fikcyjna",
+          "role": null,
+          "address": null
+        },
+        {
+          "token": "[OSOBA_2]",
+          "name": "Budowa Test",
+          "role": "seller",
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "protokol_odbioru",
+      "documents": {
+        "d": [
+          "PROTOKÓŁ ODBIORU LOKALU. W dniu 15 maja 2024 r. Pan Witold Wymyślny, zamieszkały w Warszawie przy al. Testowej 120 m. 4, odebrał klucze. Uwagi Witolda Wymyślnego: brak."
+        ]
+      },
+      "secrets": [
+        "Witold",
+        "Wymyślny",
+        "Witolda",
+        "Wymyślnego",
+        "Testowej 120 m. 4"
+      ],
+      "expected": {
+        "d": [
+          "PROTOKÓŁ ODBIORU LOKALU. W dniu 15 maja 2024 r. Pan [OSOBA_1], zamieszkały w Warszawie przy [ADRES_1], odebrał klucze. Uwagi [OSOBA_1.1]: brak."
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Witold Wymyślny",
+        "[ADRES_1]": "al. Testowej 120 m. 4",
+        "[OSOBA_1.1]": "Witolda Wymyślnego"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Witold Wymyślny",
+          "role": null,
+          "address": "al. Testowej 120 m. 4, odebrał klucze"
+        }
+      ]
+    },
+    {
+      "name": "komparycja_rola_ocr",
+      "documents": {
+        "d": [
+          "KANCELARIA NOTARIALNA — Dorota Zmyślona\nDnia 5 października 2026 roku przed notariuszem Dorota Zmyślona, w kancelarii w Warszawie, stawili się:\nPrzedstawiciel Dewelopera: Michał Fikcyjny\nImiona rodziców: Jan i Helena.\nPESEL: 95992612874. Dowód osobisty: TST000003.\nNabywca: Natalia Wymyślona\nImiona rodziców: Marek i Teresa.\nPESEL: 6599l347642. Dowód osobisty: TSTO000004.\nNabywca: Paweł Wymyślony\nMichał Fikcyjny działa w imieniu APM Test sp. z o.o. Natalii Wymyślonej i Pawłowi Wymyślonemu wydano lokal."
+        ]
+      },
+      "secrets": [
+        "Dorota",
+        "Zmyślona",
+        "Michał",
+        "Fikcyjny",
+        "Natalia",
+        "Wymyślona",
+        "Paweł",
+        "Wymyślony",
+        "Natalii",
+        "Wymyślonej",
+        "Pawłowi",
+        "Wymyślonemu",
+        "Jan i Helena",
+        "Marek i Teresa",
+        "95992612874",
+        "6599l347642",
+        "TST000003",
+        "TSTO000004"
+      ],
+      "expected": {
+        "d": [
+          "KANCELARIA NOTARIALNA — [OSOBA_3]\nDnia 5 października 2026 roku przed notariuszem [OSOBA_3], w kancelarii w Warszawie, stawili się:\nPrzedstawiciel Dewelopera: [OSOBA_1]\nImiona rodziców: [RODZICE_1].\nPESEL: [PESEL_1]. Dowód osobisty: [DOWOD_1].\nNabywca: [OSOBA_2]\nImiona rodziców: [RODZICE_2].\nPESEL: [PESEL_2]. Dowód osobisty: [DOWOD_2].\nNabywca: [OSOBA_4.1] [OSOBA_2.2]\n[OSOBA_1] działa w imieniu APM Test sp. z o.o. [OSOBA_2.1] i [OSOBA_4.2] [OSOBA_2.3] wydano lokal."
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Michał Fikcyjny",
+        "[OSOBA_2]": "Natalia Wymyślona",
+        "[OSOBA_3]": "Dorota Zmyślona",
+        "[OSOBA_4]": "Paweł Wymyślony",
+        "[PESEL_1]": "95992612874",
+        "[PESEL_2]": "6599l347642",
+        "[DOWOD_1]": "TST000003",
+        "[DOWOD_2]": "TSTO000004",
+        "[RODZICE_1]": "Jan i Helena",
+        "[RODZICE_2]": "Marek i Teresa",
+        "[OSOBA_2.1]": "Natalii Wymyślonej",
+        "[OSOBA_4.1]": "Paweł",
+        "[OSOBA_2.2]": "Wymyślony",
+        "[OSOBA_4.2]": "Pawłowi",
+        "[OSOBA_2.3]": "Wymyślonemu"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Michał Fikcyjny",
+          "role": "representative",
+          "address": null
+        },
+        {
+          "token": "[OSOBA_2]",
+          "name": "Natalia Wymyślona",
+          "role": "buyer",
+          "address": null
+        },
+        {
+          "token": "[OSOBA_3]",
+          "name": "Dorota Zmyślona",
+          "role": "notary",
+          "address": null
+        },
+        {
+          "token": "[OSOBA_4]",
+          "name": "Paweł Wymyślony",
+          "role": "buyer",
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "komparycja_dwa_imiona_i_email_z_ocr",
+      "documents": {
+        "d": [
+          "przed notariuszem Tadeuszem Romualdem Próbnym, stawili się: 1/ Adam Michał Zmyślony, używający imienia Adam, syn Romana i Teresy, PESEL 85071512348, działający za spółkę Budowa Test sp. z o.o. 2/ Natalia Zofia Fikcyjna, używająca imienia Natalia, córka Pawła i Elżbiety. Adam Zmyślony również jako „Przedstawiciel Dewelopera”, natomiast Natalia Fikcyjna zwana będzie również jako „Nabywca”. Kontakt: „natalia. fikcyjnaQexample.com”."
+        ]
+      },
+      "secrets": [
+        "85071512348",
+        "Zmyślony",
+        "Michał",
+        "Fikcyjna",
+        "Zofia",
+        "Próbnym",
+        "Romualdem",
+        "Romana",
+        "Elżbiety",
+        "fikcyjnaQexample"
+      ],
+      "expected": {
+        "d": [
+          "przed notariuszem [OSOBA_3], stawili się: 1/ [OSOBA_1], używający imienia [OSOBA_1.2], syn [RODZICE_1], PESEL [PESEL_1], działający za spółkę Budowa Test sp. z o.o. 2/ [OSOBA_2], używająca imienia [OSOBA_2.2], córka [RODZICE_2]. [OSOBA_1.1] również jako „Przedstawiciel Dewelopera”, natomiast [OSOBA_2.1] zwana będzie również jako „Nabywca”. Kontakt: „[EMAIL_1]”."
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Adam Michał Zmyślony",
+        "[OSOBA_2]": "Natalia Zofia Fikcyjna",
+        "[OSOBA_3]": "Tadeuszem Romualdem Próbnym",
+        "[EMAIL_1]": "natalia. fikcyjnaQexample.com",
+        "[PESEL_1]": "85071512348",
+        "[RODZICE_1]": "Romana i Teresy",
+        "[RODZICE_2]": "Pawła i Elżbiety",
+        "[OSOBA_1.1]": "Adam Zmyślony",
+        "[OSOBA_2.1]": "Natalia Fikcyjna",
+        "[OSOBA_1.2]": "Adam",
+        "[OSOBA_2.2]": "Natalia"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Adam Michał Zmyślony",
+          "role": "representative",
+          "address": null
+        },
+        {
+          "token": "[OSOBA_2]",
+          "name": "Natalia Zofia Fikcyjna",
+          "role": "buyer",
+          "address": null
+        },
+        {
+          "token": "[OSOBA_3]",
+          "name": "Tadeuszem Romualdem Próbnym",
+          "role": "notary",
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "wariant_notary_before_role__przede_mną",
+      "documents": {
+        "d": [
+          "Dnia 5 marca 2025 roku przede mną Katarzyną Testowską, notariuszem w Warszawie, stawili się:"
+        ]
+      },
+      "secrets": [
+        "Katarzyną",
+        "Testowską"
+      ],
+      "expected": {
+        "d": [
+          "Dnia 5 marca 2025 roku przede mną [OSOBA_1], notariuszem w Warszawie, stawili się:"
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Katarzyną Testowską"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Katarzyną Testowską",
+          "role": "notary",
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "wariant_notary_with_academic_title",
+      "documents": {
+        "d": [
+          "przed Notariuszem dr. hab. Jakubem Próbnym w dniu 1 października 2024 roku"
+        ]
+      },
+      "secrets": [
+        "Jakubem",
+        "Próbnym"
+      ],
+      "expected": {
+        "d": [
+          "przed Notariuszem dr. hab. [OSOBA_1] w dniu 1 października 2024 roku"
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Jakubem Próbnym"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Jakubem Próbnym",
+          "role": "notary",
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "wariant_notary_alternatives_with_slash",
+      "documents": {
+        "d": [
+          "przed notariuszem Konradem Zmyślnym/Magdaleną Fikcyjną, stawili się:"
+        ]
+      },
+      "secrets": [
+        "Konradem",
+        "Zmyślnym",
+        "Magdaleną",
+        "Fikcyjną"
+      ],
+      "expected": {
+        "d": [
+          "przed notariuszem [OSOBA_1]/[OSOBA_2], stawili się:"
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Konradem Zmyślnym",
+        "[OSOBA_2]": "Magdaleną Fikcyjną"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Konradem Zmyślnym",
+          "role": "notary",
+          "address": null
+        },
+        {
+          "token": "[OSOBA_2]",
+          "name": "Magdaleną Fikcyjną",
+          "role": "notary",
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "wariant_deputy_notary__double_surname_with_spaced_dash",
+      "documents": {
+        "d": [
+          "sporządzonego przez Krzysztofa Testera, zastępcę notarialnego Ewy Joanny Próbnej – Wzorowej, notariusza w Warszawie"
+        ]
+      },
+      "secrets": [
+        "Krzysztofa",
+        "Testera",
+        "Joanny",
+        "Próbnej",
+        "Wzorowej"
+      ],
+      "expected": {
+        "d": [
+          "sporządzonego przez [OSOBA_2], zastępcę notarialnego [OSOBA_1.1] – [OSOBA_1.2], notariusza w Warszawie"
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Ewy Joanny Próbnej – Wzorowej",
+        "[OSOBA_2]": "Krzysztofa Testera",
+        "[OSOBA_1.1]": "Ewy Joanny Próbnej",
+        "[OSOBA_1.2]": "Wzorowej"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Ewy Joanny Próbnej – Wzorowej",
+          "role": "notary",
+          "address": null
+        },
+        {
+          "token": "[OSOBA_2]",
+          "name": "Krzysztofa Testera",
+          "role": "notary",
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "wariant_double_surname_hyphen_broken_by_line",
+      "documents": {
+        "d": [
+          "sporządzonym przez Ewę Próbną-\nWzorową notariusza w Warszawie,"
+        ]
+      },
+      "secrets": [
+        "Próbną",
+        "Wzorową"
+      ],
+      "expected": {
+        "d": [
+          "sporządzonym przez [OSOBA_1.1]-\n[OSOBA_1.2] notariusza w Warszawie,"
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Ewę Próbną-\nWzorową",
+        "[OSOBA_1.1]": "Ewę Próbną",
+        "[OSOBA_1.2]": "Wzorową"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Ewę Próbną-Wzorową",
+          "role": "notary",
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "wariant_według_oświadczenia_zamieszkały",
+      "documents": {
+        "d": [
+          "1. Jan Testowy, według oświadczenia zamieszkały: 00-001 Warszawa, ul. Prosta 1,"
+        ]
+      },
+      "secrets": [
+        "Testowy"
+      ],
+      "expected": {
+        "d": [
+          "1. [OSOBA_1], według oświadczenia zamieszkały: [KOD_1] Warszawa, [ADRES_1],"
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Jan Testowy",
+        "[KOD_1]": "00-001",
+        "[ADRES_1]": "ul. Prosta 1"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Jan Testowy",
+          "role": null,
+          "address": ": 00-001 Warszawa, ul. Prosta 1"
+        }
+      ]
+    },
+    {
+      "name": "wariant_imiona_rodziców_after_name",
+      "documents": {
+        "d": [
+          "1. Marek Wzorcowy, imiona rodziców: Jan, Ewa, dowód osobisty: ABC123456 ważny do dnia 1.01.2030, PESEL: 85071512348,"
+        ]
+      },
+      "secrets": [
+        "Wzorcowy",
+        "Marek"
+      ],
+      "expected": {
+        "d": [
+          "1. [OSOBA_1], imiona rodziców: [RODZICE_1], dowód osobisty: [DOWOD_1] ważny do dnia 1.01.2030, PESEL: [PESEL_1],"
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Marek Wzorcowy",
+        "[PESEL_1]": "85071512348",
+        "[DOWOD_1]": "ABC123456",
+        "[RODZICE_1]": "Jan, Ewa"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Marek Wzorcowy",
+          "role": null,
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "wariant_used_first_name_far_away",
+      "documents": {
+        "d": [
+          "1. Robert Marian Wzorek, zamieszkały: Kraków, legitymujący się dowodem osobistym, używający pierwszego imienia „Robert” – działający"
+        ]
+      },
+      "secrets": [
+        "Wzorek",
+        "Marian"
+      ],
+      "expected": {
+        "d": [
+          "1. Robert [OSOBA_1], zamieszkały: Kraków, legitymujący się dowodem osobistym, używający pierwszego imienia „Robert” – działający"
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Marian Wzorek"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Marian Wzorek",
+          "role": null,
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "wariant_double_surname_spaced_dash",
+      "documents": {
+        "d": [
+          "2. Pani Katarzyna Testowa – Próbna, córka Adama i Ewy, zamieszkała: Kraków,"
+        ]
+      },
+      "secrets": [
+        "Testowa",
+        "Próbna"
+      ],
+      "expected": {
+        "d": [
+          "2. Pani [OSOBA_1.1] – [OSOBA_1.2], córka [RODZICE_1], zamieszkała: Kraków,"
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Katarzyna Testowa – Próbna",
+        "[RODZICE_1]": "Adama i Ewy",
+        "[OSOBA_1.1]": "Katarzyna Testowa",
+        "[OSOBA_1.2]": "Próbna"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Katarzyna Testowa – Próbna",
+          "role": null,
+          "address": ": Kraków"
+        }
+      ]
+    },
+    {
+      "name": "wariant_double_surname_hyphen",
+      "documents": {
+        "d": [
+          "2. Pani Katarzyna Testowa-Próbna, córka Adama i Ewy, zamieszkała: Kraków,"
+        ]
+      },
+      "secrets": [
+        "Testowa",
+        "Próbna"
+      ],
+      "expected": {
+        "d": [
+          "2. Pani [OSOBA_1.1]-[OSOBA_1.2], córka [RODZICE_1], zamieszkała: Kraków,"
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Katarzyna Testowa-Próbna",
+        "[RODZICE_1]": "Adama i Ewy",
+        "[OSOBA_1.1]": "Katarzyna Testowa",
+        "[OSOBA_1.2]": "Próbna"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Katarzyna Testowa-Próbna",
+          "role": null,
+          "address": ": Kraków"
+        }
+      ]
+    },
+    {
+      "name": "wariant_particle_surname",
+      "documents": {
+        "d": [
+          "3. Pan Jan van der Probe, syn Piotra, zamieszkały: Gdańsk,"
+        ]
+      },
+      "secrets": [
+        "Probe"
+      ],
+      "expected": {
+        "d": [
+          "3. Pan [OSOBA_1.1] van der [OSOBA_1.2], syn [RODZICE_1], zamieszkały: Gdańsk,"
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Jan van der Probe",
+        "[RODZICE_1]": "Piotra",
+        "[OSOBA_1.1]": "Jan",
+        "[OSOBA_1.2]": "Probe"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Jan van der Probe",
+          "role": null,
+          "address": ": Gdańsk"
+        }
+      ]
+    },
+    {
+      "name": "wariant_names_in_capitals",
+      "documents": {
+        "d": [
+          "Nabywca: JAN TESTOWY, PESEL 85071512348"
+        ]
+      },
+      "secrets": [
+        "JAN",
+        "TESTOWY"
+      ],
+      "expected": {
+        "d": [
+          "Nabywca: [OSOBA_1], PESEL [PESEL_1]"
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "JAN TESTOWY",
+        "[PESEL_1]": "85071512348"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Jan Testowy",
+          "role": "buyer",
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "wariant_protocol_form_field",
+      "documents": {
+        "d": [
+          "Imię i nazwisko Nabywcy: Anna Fikcyjna\nTelefon: 501 222 333"
+        ]
+      },
+      "secrets": [
+        "Fikcyjna",
+        "Anna"
+      ],
+      "expected": {
+        "d": [
+          "Imię i nazwisko Nabywcy: [OSOBA_1]\nTelefon: [TELEFON_1]"
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Anna Fikcyjna",
+        "[TELEFON_1]": "501 222 333"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Anna Fikcyjna",
+          "role": "buyer",
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "wariant_maiden_name",
+      "documents": {
+        "d": [
+          "Pani Anna Fikcyjna z domu Wzorcowa, nazwisko rodowe: Wzorcowa,"
+        ]
+      },
+      "secrets": [
+        "Wzorcowa"
+      ],
+      "expected": {
+        "d": [
+          "Pani [OSOBA_1] z domu [NAZWISKO_1], nazwisko rodowe: [NAZWISKO_1],"
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Anna Fikcyjna",
+        "[NAZWISKO_1]": "Wzorcowa"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Anna Fikcyjna",
+          "role": null,
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "wariant_passport_foreigner",
+      "documents": {
+        "d": [
+          "Pan Oleh Testenko, obywatel Ukrainy, legitymujący się paszportem nr FA123456, urodzony dnia 1 stycznia 1990 roku,"
+        ]
+      },
+      "secrets": [
+        "Testenko",
+        "FA123456",
+        "1 stycznia 1990"
+      ],
+      "expected": {
+        "d": [
+          "Pan [OSOBA_1], obywatel Ukrainy, legitymujący się paszportem nr [DOWOD_1], urodzony dnia [URODZENIE_1] roku,"
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Oleh Testenko",
+        "[DOWOD_1]": "FA123456",
+        "[URODZENIE_1]": "1 stycznia 1990"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Oleh Testenko",
+          "role": null,
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "wariant_landline_phone",
+      "documents": {
+        "d": [
+          "kontakt: tel. (22) 123 45 67 lub +48501222333"
+        ]
+      },
+      "secrets": [
+        "123 45 67",
+        "501222333"
+      ],
+      "expected": {
+        "d": [
+          "kontakt: tel. [TELEFON_2] lub [TELEFON_1]"
+        ]
+      },
+      "mapping": {
+        "[TELEFON_1]": "+48501222333",
+        "[TELEFON_2]": "(22) 123 45 67"
+      },
+      "persons": []
+    },
+    {
+      "name": "wariant_spouses_with_role",
+      "documents": {
+        "d": [
+          "Nabywcą: Jan Testowy i Anna Testowa, małżonkowie,"
+        ]
+      },
+      "secrets": [
+        "Jan",
+        "Anna",
+        "Testowy",
+        "Testowa"
+      ],
+      "expected": {
+        "d": [
+          "Nabywcą: [OSOBA_1] i [OSOBA_2.1] [OSOBA_1.1], małżonkowie,"
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Jan Testowy",
+        "[OSOBA_2]": "Anna Testowa",
+        "[OSOBA_2.1]": "Anna",
+        "[OSOBA_1.1]": "Testowa"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Jan Testowy",
+          "role": "buyer",
+          "address": null
+        },
+        {
+          "token": "[OSOBA_2]",
+          "name": "Anna Testowa",
+          "role": "buyer",
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "wariant_on_behalf_of",
+      "documents": {
+        "d": [
+          "działający w imieniu własnym oraz w imieniu Małgorzaty Zmyślonej, córki Jana,"
+        ]
+      },
+      "secrets": [
+        "Zmyślonej"
+      ],
+      "expected": {
+        "d": [
+          "działający w imieniu własnym oraz w imieniu [OSOBA_1], córki Jana,"
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Małgorzaty Zmyślonej"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Małgorzaty Zmyślonej",
+          "role": null,
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "wariant_initials",
+      "documents": {
+        "d": [
+          "Nabywca: Jan Testowy ... podpis: J. Testowy, Jan T."
+        ]
+      },
+      "secrets": [
+        "Testowy"
+      ],
+      "expected": {
+        "d": [
+          "Nabywca: [OSOBA_1] ... podpis: J. [OSOBA_1.1], [OSOBA_1.2] T."
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Jan Testowy",
+        "[OSOBA_1.1]": "Testowy",
+        "[OSOBA_1.2]": "Jan"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Jan Testowy",
+          "role": "buyer",
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "wariant_id_with_space",
+      "documents": {
+        "d": [
+          "dowodem osobistym serii i nr: ABC 123456,"
+        ]
+      },
+      "secrets": [
+        "ABC 123456"
+      ],
+      "expected": {
+        "d": [
+          "dowodem osobistym serii i nr: [DOWOD_1],"
+        ]
+      },
+      "mapping": {
+        "[DOWOD_1]": "ABC 123456"
+      },
+      "persons": []
+    },
+    {
+      "name": "agreement_and_deed",
+      "documents": {
+        "doc_1": [
+          "UMOWA DEWELOPERSKA zawarta pomiędzy Budowa Test Spółka z o.o. (NIP: 123-456-78-02, REGON: 123456785) a Panem Tomaszem Przykładowym, PESEL 90010112349, legitymującym się dowodem osobistym nr ABC523456, zamieszkałym w Krakowie przy ul. Długiej 15/4, 31-147 Kraków, tel. 600 100 200, e-mail tp@example.com. Wpłaty na rachunek nr 61 1090 1014 0000 0712 1981 2874. Księga wieczysta WA1M/00012345/1. Cena brutto wynosi 450.000,00 zł. Lokal zostanie wydany do dnia 31 marca 2024 r."
+        ],
+        "doc_2": [
+          "Kupujący Tomasz Przykładowy oświadcza, że Przykładowego nie łączą z Deweloperem żadne spory."
+        ]
+      },
+      "secrets": [],
+      "expected": {
+        "doc_1": [
+          "UMOWA DEWELOPERSKA zawarta pomiędzy Budowa Test Spółka z o.o. (NIP: [NIP_1], REGON: [REGON_1]) a Panem [OSOBA_1], PESEL [PESEL_1], legitymującym się dowodem osobistym nr [DOWOD_1], zamieszkałym w Krakowie przy [ADRES_1], [KOD_1] Kraków, tel. [TELEFON_1], e-mail [EMAIL_1]. Wpłaty na rachunek nr [KONTO_1]. Księga wieczysta [KW_1]. Cena brutto wynosi 450.000,00 zł. Lokal zostanie wydany do dnia 31 marca 2024 r."
+        ],
+        "doc_2": [
+          "Kupujący [OSOBA_1.1] oświadcza, że [OSOBA_1.2] nie łączą z Deweloperem żadne spory."
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Tomaszem Przykładowym",
+        "[EMAIL_1]": "tp@example.com",
+        "[KONTO_1]": "61 1090 1014 0000 0712 1981 2874",
+        "[KW_1]": "WA1M/00012345/1",
+        "[PESEL_1]": "90010112349",
+        "[NIP_1]": "123-456-78-02",
+        "[REGON_1]": "123456785",
+        "[DOWOD_1]": "ABC523456",
+        "[TELEFON_1]": "600 100 200",
+        "[KOD_1]": "31-147",
+        "[ADRES_1]": "ul. Długiej 15/4",
+        "[OSOBA_1.1]": "Tomasz Przykładowy",
+        "[OSOBA_1.2]": "Przykładowego"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Tomaszem Przykładowym",
+          "role": null,
+          "address": "ul. Długiej 15/4, 31-147 Kraków, tel"
+        }
+      ]
+    },
+    {
+      "name": "family",
+      "documents": {
+        "d": [
+          "Nabywca: Natalia Testowa\nNabywca: Paweł Testowy\nPawłowi Testowemu i Natalii Testowej wydano lokal."
+        ]
+      },
+      "secrets": [],
+      "expected": {
+        "d": [
+          "Nabywca: [OSOBA_1]\nNabywca: [OSOBA_2.1] [OSOBA_1.2]\n[OSOBA_2.2] [OSOBA_1.3] i [OSOBA_1.1] wydano lokal."
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Natalia Testowa",
+        "[OSOBA_2]": "Paweł Testowy",
+        "[OSOBA_1.1]": "Natalii Testowej",
+        "[OSOBA_2.1]": "Paweł",
+        "[OSOBA_1.2]": "Testowy",
+        "[OSOBA_2.2]": "Pawłowi",
+        "[OSOBA_1.3]": "Testowemu"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Natalia Testowa",
+          "role": "buyer",
+          "address": null
+        },
+        {
+          "token": "[OSOBA_2]",
+          "name": "Paweł Testowy",
+          "role": "buyer",
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "terms",
+      "documents": {
+        "d": [
+          "Nabywca: Karol Stroński\nNabywca zapłaci Deweloperowi Cenę Całkowitą. Zawarcie Umowy Przenoszącej nastąpi po Wydaniu Lokalu Mieszkalnego."
+        ]
+      },
+      "secrets": [
+        "Karol",
+        "Stroński"
+      ],
+      "expected": {
+        "d": [
+          "Nabywca: [OSOBA_1]\nNabywca zapłaci Deweloperowi Cenę Całkowitą. Zawarcie Umowy Przenoszącej nastąpi po Wydaniu Lokalu Mieszkalnego."
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Karol Stroński"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Karol Stroński",
+          "role": "buyer",
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "role_after_entry",
+      "documents": {
+        "d": [
+          "Stawili się: 1. Jan Zmyślony, PESEL 85071512348, działający w imieniu Budowa Test sp. z o.o., zwanej dalej „Deweloperem”, 2. Pani Katarzyna Fikcyjna, córka Adama, oraz Pan Bartłomiej Fikcyjny, syn Jana, zwani dalej łącznie „Nabywcą”."
+        ]
+      },
+      "secrets": [
+        "Zmyślony",
+        "Fikcyjna",
+        "Fikcyjny"
+      ],
+      "expected": {
+        "d": [
+          "Stawili się: 1. [OSOBA_3], PESEL [PESEL_1], działający w imieniu Budowa Test sp. z o.o., zwanej dalej „Deweloperem”, 2. Pani [OSOBA_1], córka [RODZICE_1], oraz Pan [OSOBA_2.1] [OSOBA_1.1], syn [RODZICE_2], zwani dalej łącznie „Nabywcą”."
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Katarzyna Fikcyjna",
+        "[OSOBA_2]": "Bartłomiej Fikcyjny",
+        "[OSOBA_3]": "Jan Zmyślony",
+        "[PESEL_1]": "85071512348",
+        "[RODZICE_1]": "Adama",
+        "[RODZICE_2]": "Jana",
+        "[OSOBA_2.1]": "Bartłomiej",
+        "[OSOBA_1.1]": "Fikcyjny"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Katarzyna Fikcyjna",
+          "role": "buyer",
+          "address": null
+        },
+        {
+          "token": "[OSOBA_2]",
+          "name": "Bartłomiej Fikcyjny",
+          "role": "buyer",
+          "address": null
+        },
+        {
+          "token": "[OSOBA_3]",
+          "name": "Jan Zmyślony",
+          "role": "representative",
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "two_first_names",
+      "documents": {
+        "d": [
+          "przed notariuszem Tadeuszem Romualdem Testowym, stawili się:\n1/ Adam Michał Zmyślony, używający imienia Adam, syn Romana i Teresy, PESEL 85071512348, działający za spółkę Budowa Test sp. z o.o.\n2/ Natalia Zofia Fikcyjna, używająca imienia Natalia, córka Pawła i Elżbiety. Spółka zwana będzie w dalszej treści niniejszego aktu również jako „Spółka” lub „Deweloper”, Adam Zmyślony również jako „Przedstawiciel Dewelopera”, natomiast Natalia Fikcyjna zwana będzie również jako „Nabywca”. Według aktu notariusza w Zakopanem Łukasza Próbnego."
+        ]
+      },
+      "secrets": [
+        "Zmyślony",
+        "Michał",
+        "Fikcyjna",
+        "Zofia",
+        "Testowym",
+        "Romualdem",
+        "Romana",
+        "Elżbiety",
+        "Próbnego"
+      ],
+      "expected": {
+        "d": [
+          "przed notariuszem [OSOBA_3], stawili się:\n1/ [OSOBA_1], używający imienia [OSOBA_1.2], syn [RODZICE_1], PESEL [PESEL_1], działający za spółkę Budowa Test sp. z o.o.\n2/ [OSOBA_2], używająca imienia [OSOBA_2.2], córka [RODZICE_2]. Spółka zwana będzie w dalszej treści niniejszego aktu również jako „Spółka” lub „Deweloper”, [OSOBA_1.1] również jako „Przedstawiciel Dewelopera”, natomiast [OSOBA_2.1] zwana będzie również jako „Nabywca”. Według aktu notariusza w Zakopanem [OSOBA_4]."
+        ]
+      },
+      "mapping": {
+        "[OSOBA_1]": "Adam Michał Zmyślony",
+        "[OSOBA_2]": "Natalia Zofia Fikcyjna",
+        "[OSOBA_3]": "Tadeuszem Romualdem Testowym",
+        "[OSOBA_4]": "Łukasza Próbnego",
+        "[PESEL_1]": "85071512348",
+        "[RODZICE_1]": "Romana i Teresy",
+        "[RODZICE_2]": "Pawła i Elżbiety",
+        "[OSOBA_1.1]": "Adam Zmyślony",
+        "[OSOBA_2.1]": "Natalia Fikcyjna",
+        "[OSOBA_1.2]": "Adam",
+        "[OSOBA_2.2]": "Natalia"
+      },
+      "persons": [
+        {
+          "token": "[OSOBA_1]",
+          "name": "Adam Michał Zmyślony",
+          "role": "representative",
+          "address": null
+        },
+        {
+          "token": "[OSOBA_2]",
+          "name": "Natalia Zofia Fikcyjna",
+          "role": "buyer",
+          "address": null
+        },
+        {
+          "token": "[OSOBA_3]",
+          "name": "Tadeuszem Romualdem Testowym",
+          "role": "notary",
+          "address": null
+        },
+        {
+          "token": "[OSOBA_4]",
+          "name": "Łukasza Próbnego",
+          "role": "notary",
+          "address": null
+        }
+      ]
+    },
+    {
+      "name": "ocr_email",
+      "documents": {
+        "d": [
+          "drogą mailową na adres: „anna. testowaQexample.com” lub jan.probny © example.org, albo kontakt(at)test.pl. Pozostały tekst: kwota 1.080.000,00 zł, wersja 2.1, Q1 2026."
+        ]
+      },
+      "secrets": [
+        "testowaQexample",
+        "jan.probny",
+        "kontakt(at)test.pl"
+      ],
+      "expected": {
+        "d": [
+          "drogą mailową na adres: „[EMAIL_1]” lub [EMAIL_2], albo [EMAIL_3]. Pozostały tekst: kwota 1.080.000,00 zł, wersja 2.1, Q1 2026."
+        ]
+      },
+      "mapping": {
+        "[EMAIL_1]": "anna. testowaQexample.com",
+        "[EMAIL_2]": "jan.probny © example.org",
+        "[EMAIL_3]": "kontakt(at)test.pl"
+      },
+      "persons": []
+    }
+  ]
+}

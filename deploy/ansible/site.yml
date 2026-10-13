@@ -1,0 +1,317 @@
+# Install the claims app on the law firm's server (Debian 12).
+#   ansible-playbook -i inventory.ini site.yml --ask-vault-pass
+# Target: installation < 1 h (CLAUDE.md, section 11).
+- name: Claims server
+  hosts: claims
+  become: true
+  vars:
+    compose_file: /etc/claims/docker-compose.yml
+    env_file: "{{ claims_root }}/config/.env"
+
+  tasks:
+    # --- packages (before the firewall closes egress) ------------------------------
+    - name: Base packages
+      ansible.builtin.apt:
+        name: [ca-certificates, curl, gnupg, nftables, cryptsetup, unattended-upgrades, python3]
+        update_cache: true
+
+    - name: Docker apt key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/debian/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+
+    - name: Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
+        filename: docker
+
+    - name: Docker engine and compose plugin
+      ansible.builtin.apt:
+        name: [docker-ce, docker-ce-cli, containerd.io, docker-compose-plugin]
+        update_cache: true
+
+    - name: Cosign binary (checksum verified)
+      ansible.builtin.get_url:
+        url: "https://github.com/sigstore/cosign/releases/download/v{{ cosign_version }}/cosign-linux-amd64"
+        dest: /usr/local/bin/cosign
+        mode: "0755"
+        checksum: "sha256:{{ cosign_sha256 }}"
+
+    # --- encrypted data volume -------------------------------------------------------
+    - name: Check LUKS header
+      ansible.builtin.command: cryptsetup isLuks {{ data_device }}
+      register: is_luks
+      failed_when: false
+      changed_when: false
+      when: data_device | length > 0
+
+    - name: Format LUKS volume (asks for the passphrase on the console)
+      ansible.builtin.pause:
+        prompt: "Data device {{ data_device }} is not encrypted. Run on the server: cryptsetup luksFormat {{ data_device }} && cryptsetup open {{ data_device }} claims_data && mkfs.ext4 /dev/mapper/claims_data — then press Enter"
+      when: data_device | length > 0 and is_luks.rc != 0
+
+    - name: Key file for automatic unlock
+      when: data_device | length > 0 and luks_unlock == 'keyfile'
+      block:
+        - name: Generate key file
+          ansible.builtin.shell: dd if=/dev/urandom of=/etc/claims-luks.key bs=64 count=1 && chmod 400 /etc/claims-luks.key
+          args: { creates: /etc/claims-luks.key }
+        - name: Add key file to LUKS (asks for the passphrase on the console)
+          ansible.builtin.pause:
+            prompt: "Run on the server: cryptsetup luksAddKey {{ data_device }} /etc/claims-luks.key — then press Enter"
+        - name: crypttab entry
+          ansible.builtin.lineinfile:
+            path: /etc/crypttab
+            line: "claims_data {{ data_device }} /etc/claims-luks.key luks"
+            create: true
+            mode: "0600"
+
+    - name: Mount data volume
+      ansible.posix.mount:
+        path: "{{ claims_root }}"
+        src: /dev/mapper/claims_data
+        fstype: ext4
+        opts: "defaults,nofail,noexec,nosuid,nodev"
+        state: mounted
+      when: data_device | length > 0
+
+    - name: Docker starts only when the encrypted volume is mounted
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/docker.service.d/claims-volume.conf
+        mode: "0644"
+        content: |
+          # Without this, after a reboot with a locked volume the containers would start on an
+          # empty directory of the root disk (and PostgreSQL would initialise a new database there).
+          [Unit]
+          RequiresMountsFor={{ claims_root }}
+      when: data_device | length > 0
+
+    # --- configuration ----------------------------------------------------------------
+    - name: Directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner | default('root') }}"
+        mode: "{{ item.mode | default('0750') }}"
+      loop:
+        - { path: /etc/claims }
+        - { path: "{{ claims_root }}/config" , mode: "0700" }
+        - { path: "{{ claims_root }}/config/app" }
+        - { path: "{{ claims_root }}/files", owner: "10001" }
+        - { path: "{{ claims_root }}/postgres" }
+        - { path: "{{ claims_root }}/caddy" }
+
+    - name: Generate secrets once, on the server
+      ansible.builtin.shell: |
+        set -e
+        umask 077
+        python3 - <<'PY' > {{ env_file }}.secrets
+        import base64, os, secrets
+        print("CLAIMS_SECRET_KEY=" + secrets.token_urlsafe(48))
+        print("CLAIMS_MAPPING_KEY=" + base64.urlsafe_b64encode(os.urandom(32)).decode())
+        print("POSTGRES_PASSWORD=" + secrets.token_urlsafe(32))
+        PY
+      args: { creates: "{{ env_file }}.secrets" }
+
+    - name: Read secrets
+      ansible.builtin.slurp: { src: "{{ env_file }}.secrets" }
+      register: secrets_file
+      no_log: true
+
+    - name: Environment file
+      ansible.builtin.copy:
+        dest: "{{ env_file }}"
+        mode: "0600"
+        content: |
+          CLAIMS_ROOT={{ claims_root }}
+          CLAIMS_IMAGE={{ claims_release }}
+          ANTHROPIC_API_KEY={{ anthropic_api_key }}
+          {{ secrets_file.content | b64decode }}
+          CLAIMS_RETENTION_DAYS={{ retention_days }}
+          CLAIMS_REQUIRE_ANON_APPROVAL={{ require_anon_approval | lower }}
+          CLAIMS_SECURE_COOKIES=true
+      no_log: true
+
+    - name: Application config (repo defaults + firm data)
+      ansible.builtin.copy:
+        src: "../../config/{{ item }}"
+        dest: "{{ claims_root }}/config/app/{{ item }}"
+        mode: "0644"
+      loop: [models.yaml, calculator.yaml, statutory_interest.yaml]
+
+    - name: Letter config
+      ansible.builtin.copy:
+        dest: "{{ claims_root }}/config/app/letter.yaml"
+        mode: "0644"
+        content: |
+          firm:
+            name: {{ firm.name | to_json }}
+            address: {{ firm.address | to_json }}
+            lawyer: {{ firm.lawyer | to_json }}
+            city: {{ firm.city | to_json }}
+          payment_deadline_days: {{ payment_deadline_days }}
+          legal_basis:
+            text: ""
+            source: "uzupełnić"
+            verified: false
+
+    - name: Caddyfile
+      ansible.builtin.copy:
+        dest: "{{ claims_root }}/config/Caddyfile"
+        mode: "0644"
+        content: |
+          {{ claims_hostname }} {
+          {% if caddy_tls_internal %}	tls internal
+          {% endif %}	encode gzip
+          	request_body {
+          		max_size 60MB
+          	}
+          	header {
+          		Strict-Transport-Security "max-age=31536000"
+          		-Server
+          	}
+          	reverse_proxy web:8000
+          }
+
+    - name: Compose file, update and egress scripts, release pointer, cosign key
+      ansible.builtin.copy:
+        src: "{{ item.src | default(omit) }}"
+        content: "{{ item.content | default(omit) }}"
+        dest: "{{ item.dest }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - { src: ../docker-compose.yml, dest: "{{ compose_file }}", mode: "0644" }
+        - { src: ../update.sh, dest: /usr/local/sbin/claims-update, mode: "0755" }
+        - { src: ../claims-egress-refresh.sh, dest: /usr/local/sbin/claims-egress-refresh, mode: "0755" }
+        - { content: "{{ claims_release }}\n", dest: /etc/claims/release, mode: "0644" }
+        - { content: "{{ cosign_public_key }}", dest: /etc/claims/cosign.pub, mode: "0644" }
+        - { content: "{{ egress_hosts | join('\n') }}\n", dest: /etc/claims/allowed_hosts, mode: "0644" }
+
+    # --- firewall ---------------------------------------------------------------------------
+    - name: nftables rules
+      ansible.builtin.template:
+        src: ../nftables.conf
+        dest: /etc/claims/nftables.conf
+        mode: "0644"
+      vars:
+        resolvers_v4: "{{ resolvers_v4 | join(', ') }}"
+        ntp_v4: "{{ ntp_v4 | join(', ') }}"
+        admin_cidrs_v4: "{{ admin_cidrs_v4 | join(', ') }}"
+
+    - name: Systemd units
+      ansible.builtin.copy:
+        dest: "/etc/systemd/system/{{ item.name }}"
+        mode: "0644"
+        content: "{{ item.content }}"
+      loop:
+        # Own unit instead of /etc/nftables.conf: Debian's default file starts with
+        # `flush ruleset`, which would also wipe Docker's rules on every reload.
+        - name: claims-firewall.service
+          content: |
+            [Unit]
+            Description=Claims egress firewall (nftables table inet claims)
+            After=network-pre.target docker.service
+            [Service]
+            Type=oneshot
+            RemainAfterExit=true
+            ExecStart=/usr/sbin/nft -f /etc/claims/nftables.conf
+            ExecStartPost=/usr/local/sbin/claims-egress-refresh
+            ExecReload=/usr/sbin/nft -f /etc/claims/nftables.conf
+            ExecReload=/usr/local/sbin/claims-egress-refresh
+            [Install]
+            WantedBy=multi-user.target
+        - name: claims-egress-refresh.service
+          content: |
+            [Unit]
+            Description=Refresh claims egress allow-list
+            After=nftables.service network-online.target
+            [Service]
+            Type=oneshot
+            ExecStart=/usr/local/sbin/claims-egress-refresh
+        - name: claims-egress-refresh.timer
+          content: |
+            [Timer]
+            OnBootSec=30s
+            OnUnitActiveSec=5min
+            [Install]
+            WantedBy=timers.target
+        - name: claims-purge.service
+          content: |
+            [Unit]
+            Description=Delete expired claims cases
+            [Service]
+            Type=oneshot
+            ExecStart=/usr/bin/docker compose -f {{ compose_file }} --env-file {{ env_file }} exec -T web python -m app.cli purge-expired
+        - name: claims-purge.timer
+          content: |
+            [Timer]
+            OnCalendar=*-*-* 03:15
+            Persistent=true
+            [Install]
+            WantedBy=timers.target
+        - name: claims-update.service
+          content: |
+            [Unit]
+            Description=Pull, verify and deploy the claims release
+            After=docker.service
+            [Service]
+            Type=oneshot
+            Environment=CLAIMS_ROOT={{ claims_root }}
+            ExecStart=/usr/local/sbin/claims-update
+        - name: claims-update.timer
+          content: |
+            [Timer]
+            OnCalendar=*-*-* 04:00
+            RandomizedDelaySec=30min
+            Persistent=true
+            [Install]
+            WantedBy=timers.target
+
+    - name: Enable firewall and timers
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        enabled: true
+        state: started
+        daemon_reload: true
+      loop: [claims-firewall, claims-egress-refresh.timer, claims-purge.timer]
+
+    - name: Apply current firewall rules
+      ansible.builtin.systemd:
+        name: claims-firewall
+        state: reloaded
+
+    - name: Automatic updates timer
+      ansible.builtin.systemd:
+        name: claims-update.timer
+        enabled: "{{ auto_update }}"
+        state: "{{ 'started' if auto_update else 'stopped' }}"
+
+    - name: Unattended OS security upgrades
+      ansible.builtin.copy:
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+        mode: "0644"
+        content: |
+          APT::Periodic::Update-Package-Lists "1";
+          APT::Periodic::Unattended-Upgrade "1";
+
+    # --- start ----------------------------------------------------------------------------
+    - name: Pull, verify signature and start
+      ansible.builtin.command: /usr/local/sbin/claims-update
+      environment: { CLAIMS_ROOT: "{{ claims_root }}" }
+      changed_when: true
+
+    - name: Next steps
+      ansible.builtin.debug:
+        msg:
+          - "Create the first admin on the server:"
+          - "docker compose -f {{ compose_file }} --env-file {{ env_file }} exec web python -m app.cli create-user admin@kancelaria.pl --role admin"
+          - "Back up {{ env_file }}.secrets (CLAIMS_MAPPING_KEY) in the firm's password manager."
+
+    # --- hand over: remove installer access ------------------------------------------------
+    - name: Remove installer SSH key
+      ansible.posix.authorized_key:
+        user: "{{ ansible_user }}"
+        key: "{{ installer_ssh_pubkey }}"
+        state: absent
+      when: installer_ssh_pubkey | length > 0

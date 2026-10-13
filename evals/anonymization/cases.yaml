@@ -1,0 +1,203 @@
+# Synthetic anonymization gate (CLAUDE.md, section 4: 0 leaks).
+# All persons are invented; identifiers are generated with valid checksums.
+# Add a case for every leak found in practice (with invented data).
+- name: komparycja_malzonkowie
+  text: Pani Katarzyna Zmyślona, córka Adama i Ewy, PESEL 85071512348, legitymująca się dowodem osobistym AXB912345, oraz
+    Pan Bartłomiej Zmyślony, syn Jana, PESEL 92030267892, legitymujący się dowodem osobistym DEF665432, małżonkowie zamieszkali
+    przy ul. Jasnej 7/12, 30-001 Kraków, zwani dalej Nabywcą. Nabywca Katarzyna Zmyślona oraz Bartłomiejowi Zmyślonemu doręczono
+    kopię umowy.
+  secrets:
+  - '85071512348'
+  - '92030267892'
+  - AXB912345
+  - DEF665432
+  - Katarzyna
+  - Zmyślona
+  - Bartłomiej
+  - Zmyślony
+  - Zmyślonemu
+  - Bartłomiejowi
+  - Jasnej 7/12
+  - 30-001
+- name: rachunek_i_kontakt
+  text: 'Wpłaty będą dokonywane na rachunek powierniczy nr PL 46 1240 1037 0000 1234 5678 9012. Korespondencję należy kierować
+    na adres e-mail k.zmyslona@example.org lub telefonicznie: +48 501 222 333. Kontakt z Panią Haliną Fikcyjną: tel. 601-444-555.'
+  secrets:
+  - PL 46 1240 1037 0000 1234 5678 9012
+  - k.zmyslona@example.org
+  - 501 222 333
+  - 601-444-555
+  - Haliną
+  - Fikcyjną
+- name: akt_notarialny
+  text: 'Stawająca Pani Halina Fikcyjna, PESEL 77123104562, oświadcza, że lokal opisany w księdze wieczystej KR1P/00098765/8
+    został jej wydany. Haliny Fikcyjnej tożsamość notariusz ustalił na podstawie dowodu osobistego. Sprzedający: Budowa Test
+    S.A., NIP: 527-123-45-63. Fikcyjna nie zgłasza żadnych roszczeń.'
+  secrets:
+  - '77123104562'
+  - KR1P/00098765/8
+  - Halina
+  - Fikcyjna
+  - Haliny
+  - Fikcyjnej
+- name: protokol_odbioru
+  text: 'PROTOKÓŁ ODBIORU LOKALU. W dniu 15 maja 2024 r. Pan Witold Wymyślny, zamieszkały w Warszawie przy al. Testowej 120
+    m. 4, odebrał klucze. Uwagi Witolda Wymyślnego: brak.'
+  secrets:
+  - Witold
+  - Wymyślny
+  - Witolda
+  - Wymyślnego
+  - Testowej 120 m. 4
+- name: komparycja_rola_ocr
+  text: "KANCELARIA NOTARIALNA — Dorota Zmyślona\nDnia 5 października 2026 roku przed notariuszem Dorota Zmyślona, w kancelarii
+    w Warszawie, stawili się:\nPrzedstawiciel Dewelopera: Michał Fikcyjny\nImiona rodziców: Jan i Helena.\nPESEL: 95992612874.
+    Dowód osobisty: TST000003.\nNabywca: Natalia Wymyślona\nImiona rodziców: Marek i Teresa.\nPESEL: 6599l347642. Dowód
+    osobisty: TSTO000004.\nNabywca: Paweł Wymyślony\nMichał Fikcyjny działa w imieniu APM Test sp. z o.o. Natalii Wymyślonej
+    i Pawłowi Wymyślonemu wydano lokal."
+  secrets:
+  - Dorota
+  - Zmyślona
+  - Michał
+  - Fikcyjny
+  - Natalia
+  - Wymyślona
+  - Paweł
+  - Wymyślony
+  - Natalii
+  - Wymyślonej
+  - Pawłowi
+  - Wymyślonemu
+  - Jan i Helena
+  - Marek i Teresa
+  - '95992612874'
+  - 6599l347642
+  - TST000003
+  - TSTO000004
+- name: komparycja_dwa_imiona_i_email_z_ocr
+  # Found on a synthetic scanned agreement: two first names, role given in a later sentence,
+  # parents' names after "syn"/"córka", e-mail broken by OCR (@ read as Q, space after the dot).
+  text: 'przed notariuszem Tadeuszem Romualdem Próbnym, stawili się: 1/ Adam Michał Zmyślony, używający imienia Adam,
+    syn Romana i Teresy, PESEL 85071512348, działający za spółkę Budowa Test sp. z o.o. 2/ Natalia Zofia Fikcyjna,
+    używająca imienia Natalia, córka Pawła i Elżbiety. Adam Zmyślony również jako „Przedstawiciel Dewelopera”, natomiast
+    Natalia Fikcyjna zwana będzie również jako „Nabywca”. Kontakt: „natalia. fikcyjnaQexample.com”.'
+  secrets:
+  - '85071512348'
+  - Zmyślony
+  - Michał
+  - Fikcyjna
+  - Zofia
+  - Próbnym
+  - Romualdem
+  - Romana
+  - Elżbiety
+  - fikcyjnaQexample
+
+# Komparycja variants seen in public notarial templates (2026-10): names invented.
+- name: wariant_notary_before_role__przede_mną
+  text: 'Dnia 5 marca 2025 roku przede mną Katarzyną Testowską, notariuszem w Warszawie, stawili się:'
+  secrets:
+  - Katarzyną
+  - Testowską
+- name: wariant_notary_with_academic_title
+  text: przed Notariuszem dr. hab. Jakubem Próbnym w dniu 1 października 2024 roku
+  secrets:
+  - Jakubem
+  - Próbnym
+- name: wariant_notary_alternatives_with_slash
+  text: 'przed notariuszem Konradem Zmyślnym/Magdaleną Fikcyjną, stawili się:'
+  secrets:
+  - Konradem
+  - Zmyślnym
+  - Magdaleną
+  - Fikcyjną
+- name: wariant_deputy_notary__double_surname_with_spaced_dash
+  text: sporządzonego przez Krzysztofa Testera, zastępcę notarialnego Ewy Joanny Próbnej – Wzorowej, notariusza w Warszawie
+  secrets:
+  - Krzysztofa
+  - Testera
+  - Joanny
+  - Próbnej
+  - Wzorowej
+- name: wariant_double_surname_hyphen_broken_by_line
+  text: 'sporządzonym przez Ewę Próbną-
+
+    Wzorową notariusza w Warszawie,'
+  secrets:
+  - Próbną
+  - Wzorową
+- name: wariant_według_oświadczenia_zamieszkały
+  text: '1. Jan Testowy, według oświadczenia zamieszkały: 00-001 Warszawa, ul. Prosta 1,'
+  secrets:
+  - Testowy
+- name: wariant_imiona_rodziców_after_name
+  text: '1. Marek Wzorcowy, imiona rodziców: Jan, Ewa, dowód osobisty: ABC123456 ważny do dnia 1.01.2030, PESEL: 85071512348,'
+  secrets:
+  - Wzorcowy
+  - Marek
+- name: wariant_used_first_name_far_away
+  text: '1. Robert Marian Wzorek, zamieszkały: Kraków, legitymujący się dowodem osobistym, używający pierwszego imienia „Robert”
+    – działający'
+  secrets:
+  - Wzorek
+  - Marian
+- name: wariant_double_surname_spaced_dash
+  text: '2. Pani Katarzyna Testowa – Próbna, córka Adama i Ewy, zamieszkała: Kraków,'
+  secrets:
+  - Testowa
+  - Próbna
+- name: wariant_double_surname_hyphen
+  text: '2. Pani Katarzyna Testowa-Próbna, córka Adama i Ewy, zamieszkała: Kraków,'
+  secrets:
+  - Testowa
+  - Próbna
+- name: wariant_particle_surname
+  text: '3. Pan Jan van der Probe, syn Piotra, zamieszkały: Gdańsk,'
+  secrets:
+  - Probe
+- name: wariant_names_in_capitals
+  text: 'Nabywca: JAN TESTOWY, PESEL 85071512348'
+  secrets:
+  - JAN
+  - TESTOWY
+- name: wariant_protocol_form_field
+  text: 'Imię i nazwisko Nabywcy: Anna Fikcyjna
+
+    Telefon: 501 222 333'
+  secrets:
+  - Fikcyjna
+  - Anna
+- name: wariant_maiden_name
+  text: 'Pani Anna Fikcyjna z domu Wzorcowa, nazwisko rodowe: Wzorcowa,'
+  secrets:
+  - Wzorcowa
+- name: wariant_passport_foreigner
+  text: Pan Oleh Testenko, obywatel Ukrainy, legitymujący się paszportem nr FA123456, urodzony dnia 1 stycznia 1990 roku,
+  secrets:
+  - Testenko
+  - FA123456
+  - 1 stycznia 1990
+- name: wariant_landline_phone
+  text: 'kontakt: tel. (22) 123 45 67 lub +48501222333'
+  secrets:
+  - 123 45 67
+  - '501222333'
+- name: wariant_spouses_with_role
+  text: 'Nabywcą: Jan Testowy i Anna Testowa, małżonkowie,'
+  secrets:
+  - Jan
+  - Anna
+  - Testowy
+  - Testowa
+- name: wariant_on_behalf_of
+  text: działający w imieniu własnym oraz w imieniu Małgorzaty Zmyślonej, córki Jana,
+  secrets:
+  - Zmyślonej
+- name: wariant_initials
+  text: 'Nabywca: Jan Testowy ... podpis: J. Testowy, Jan T.'
+  secrets:
+  - Testowy
+- name: wariant_id_with_space
+  text: 'dowodem osobistym serii i nr: ABC 123456,'
+  secrets:
+  - ABC 123456

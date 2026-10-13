@@ -1,0 +1,54 @@
+# Copy to group_vars/all.yml. Keep secrets in Ansible Vault:
+#   ansible-vault encrypt_string --name anthropic_api_key 'sk-ant-...'
+
+claims_root: /srv/claims
+claims_hostname: claims.example-kancelaria.pl
+caddy_tls_internal: false            # true for an internal-only host name
+
+# Image to deploy, pinned by digest. Updates: change this (or /etc/claims/release on the server).
+claims_release: ghcr.io/OWNER/claims-app@sha256:REPLACE
+cosign_public_key: |
+  -----BEGIN PUBLIC KEY-----
+  REPLACE
+  -----END PUBLIC KEY-----
+cosign_version: "2.4.1"
+cosign_sha256: "REPLACE_WITH_CHECKSUM_FROM_RELEASE_PAGE"
+auto_update: false                   # true: daily pull+verify of claims_release
+
+anthropic_api_key: "{{ vault_anthropic_api_key }}"
+
+# Encrypted data volume. Leave empty to use a directory on the root disk (not recommended).
+data_device: ""                      # e.g. /dev/sdb
+luks_unlock: manual                  # manual: admin unlocks after reboot; keyfile: key on root disk
+
+retention_days: 180
+require_anon_approval: true
+
+firm:
+  name: "[NAZWA KANCELARII]"
+  address: "[ADRES KANCELARII]"
+  lawyer: "[IMIĘ I NAZWISKO PEŁNOMOCNIKA]"
+  city: "[MIEJSCOWOŚĆ]"
+payment_deadline_days: 14
+
+# Network
+resolvers_v4: ["1.1.1.1", "9.9.9.9"]
+ntp_v4: ["162.159.200.1/32", "162.159.200.123/32"]   # time.cloudflare.com; check before use
+admin_cidrs_v4: ["203.0.113.10/32"]                  # who may SSH in
+egress_hosts:
+  - api.anthropic.com
+  # container registry of the vendor
+  - ghcr.io
+  - pkg-containers.githubusercontent.com
+  # base images (postgres, redis, caddy)
+  - registry-1.docker.io
+  - auth.docker.io
+  - production.cloudflare.docker.com
+  # TLS certificate (only when caddy_tls_internal is false)
+  - acme-v02.api.letsencrypt.org
+  # OS security updates. Removing them stops automatic patching; decide with the firm.
+  - deb.debian.org
+  - security.debian.org
+
+# SSH key used for installation; removed from authorized_keys at the end when set.
+installer_ssh_pubkey: ""

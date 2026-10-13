@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Nowe pismo — {{ case.title }}{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="row-between">
+    <h1>Nowe pismo — {{ case.title }}{% if case.case_number %} <span class="muted">({{ case.case_number }})</span>{% endif %}</h1>
+    <a href="/cases/{{ case.id }}">← wróć do sprawy</a>
+  </div>
+  <p class="muted">Dane są podpowiedziane z dokumentów sprawy i ustawień kancelarii — sprawdź je i popraw. Dane osobowe zostają na serwerze; model przygotowuje wyłącznie projekt uzasadnienia na podstawie faktów bez danych osobowych.</p>
+  {% if not d.firm_ready %}<p class="alert warn">Uzupełnij dane kancelarii (nazwa, miejscowość) w <a href="/admin/firm">ustawieniach kancelarii</a> — inaczej w piśmie zostaną puste pola.</p>{% endif %}
+  {% if has_draft %}<p class="alert warn">Sprawa ma już projekt pisma. Przygotowanie nowego zastąpi go, łącznie z poprawkami. <a href="/cases/{{ case.id }}/letter">Wróć do edycji projektu</a>.</p>{% endif %}
+
+  {% set calc = view.calculation %}
+  {% if not calc.result %}
+    <p class="alert error">Brak wyliczenia — uzupełnij kartę sprawy.</p>
+  {% else %}
+  <form method="post" action="/cases/{{ case.id }}/letter/prepare" class="stack wizard" data-busy="Przygotowywanie projektu pisma (do 1 minuty)…">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+
+    <fieldset>
+      <legend>1. Rodzaj pisma</legend>
+      {% for t in d.templates %}
+      <label class="row option">
+        <input type="radio" name="template_id" value="{{ t.id }}" {% if t.id == d.template_id %}checked{% endif %}>
+        <span><strong>{{ t.name }}</strong>{% if t.description %}<br><span class="muted small">{{ t.description }}</span>{% endif %}</span>
+      </label>
+      {% endfor %}
+      {% if user.role == "admin" %}<p class="small"><a href="/admin/templates">Dodaj własny szablon pisma</a></p>{% endif %}
+    </fieldset>
+
+    <fieldset>
+      <legend>2. Mocodawcy</legend>
+      <p class="muted small">Osoby rozpoznane w dokumentach jako nabywcy są zaznaczone. Zaznacz, w czyim imieniu piszesz, sprawdź adresy; wolne wiersze służą do dopisania osób.</p>
+      {% set rows = d.clients + [{"name": "", "address": ""}, {"name": "", "address": ""}] %}
+      {% for c in rows %}
+      <div class="row client">
+        <input type="checkbox" name="client_include" value="{{ loop.index0 }}" {% if c.name and c.get("checked", true) %}checked{% endif %} title="uwzględnij w piśmie">
+        <input name="client_name" value="{{ c.name }}" placeholder="imię i nazwisko">
+        <input name="client_address" value="{{ c.address }}" placeholder="adres" class="wide">
+      </div>
+      {% endfor %}
+      {% set others = d.detected_persons|rejectattr("role", "equalto", "buyer")|list %}
+      {% if others %}
+      <details><summary class="small">Inne osoby z dokumentów ({{ others|length }})</summary>
+        <ul class="small">{% for p in others %}<li>{{ p.name }} — {{ role_labels.get(p.role, "osoba z dokumentu") }}{% if p.address %}, {{ p.address }}{% endif %}</li>{% endfor %}</ul>
+      </details>
+      {% endif %}
+    </fieldset>
+
+    <fieldset>
+      <legend>3. Deweloper i umowa</legend>
+      <label>Deweloper <input name="developer_name" value="{{ d.developer_name }}"></label>
+      <label>Adres dewelopera <input name="developer_address" value="{{ d.developer_address }}" placeholder="adres siedziby / do doręczeń"></label>
+      <div class="row">
+        <label>Data umowy deweloperskiej <input name="agreement_date" value="{{ d.agreement_date }}" placeholder="DD.MM.RRRR"></label>
+        <label>Numer aktu notarialnego <input name="agreement_deed" value="{{ d.agreement_deed }}" placeholder="Rep. A nr …"></label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>4. Kancelaria</legend>
+      <div class="row">
+        <label>Sygnatura sprawy <input name="case_number" value="{{ d.case_number }}"></label>
+        <label>Prawnik podpisujący
+          <select name="lawyer_id">
+            <option value="">— wybierz —</option>
+            {% for lw in d.lawyers %}<option value="{{ lw.id }}" {% if lw.id == d.lawyer_id %}selected{% endif %}>{{ lw.full_name }}, {{ lw.title }}</option>{% endfor %}
+          </select>
+        </label>
+      </div>
+      {% if not d.lawyers and user.role == "admin" %}<p class="small"><a href="/admin/firm#lawyers">Dodaj prawników kancelarii</a></p>{% endif %}
+      <div class="row">
+        <label>Rachunek do zapłaty <input name="bank_account" value="{{ d.bank_account }}" class="wide"></label>
+        <label>Termin zapłaty (dni) <input name="payment_deadline_days" type="number" min="1" value="{{ d.payment_deadline_days }}"></label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>5. Kwota żądania</legend>
+      <label class="row"><input type="radio" name="capped" value="no" {% if not d.capped %}checked{% endif %}> bez limitu umownego: {{ pln(calc.result.total_uncapped_grosze) }}</label>
+      <label class="row"><input type="radio" name="capped" value="yes" {% if d.capped %}checked{% endif %}> z limitem umownym: {{ pln(calc.result.total_capped_grosze) }}</label>
+    </fieldset>
+
+    <button>Przygotuj projekt pisma</button>
+    <p class="muted small">Następny krok: podgląd i edycja treści, potem pobranie .docx na wybranym szablonie.</p>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

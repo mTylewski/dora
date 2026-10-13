@@ -1,0 +1,21 @@
+# Statutory interest rate tables (annual rates, as decimal fractions, e.g. 0.1125 = 11.25%).
+# DO NOT fill from memory. Each period must be copied from the official announcement
+# (Obwieszczenie Ministra Sprawiedliwości, Monitor Polski) with the source filled in,
+# then marked verified: true by the author or a lawyer.
+#
+# Period format:
+#   - from: 2023-01-01        # first day the rate applies
+#     to: null                # last day the rate applies (null = still in force)
+#     rate: "0.0000"          # string, parsed as Decimal
+#     source: "M.P. ... poz. ..."
+#     verified: false
+
+kinds:
+  # Odsetki ustawowe (art. 359 § 2 KC) — legal basis to be confirmed.
+  statutory:
+    legal_basis: "art. 359 § 2 KC — do potwierdzenia"
+    periods: []
+  # Odsetki ustawowe za opóźnienie (art. 481 § 2 KC) — legal basis to be confirmed.
+  late_payment:
+    legal_basis: "art. 481 § 2 KC — do potwierdzenia"
+    periods: []

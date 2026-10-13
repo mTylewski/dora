@@ -1,0 +1,113 @@
+{
+  "rendered": "- id: buyer-penalty-high\n  title: Wysokie kary lub odstępne obciążające nabywcę\n  pattern: Nabywca płaci wysokie kary lub traci znaczną część wpłat w razie odstąpienia lub opóźnienia w płatności.\n  why it matters: Rażąca nierównowaga w porównaniu z sankcjami dla dewelopera.\n- id: deadline-automatic-extension\n  title: Automatyczne przedłużenie terminu\n  pattern: Termin wydania lokalu lub zawarcia umowy przenoszącej ulega automatycznemu przedłużeniu o czas trwania określonych zdarzeń, bez aneksu i bez zgody nabywcy.\n  why it matters: Jednostronna zmiana kluczowego terminu umowy przez dewelopera.\n- id: deadline-relative\n  title: Termin określony względnie\n  pattern: Termin wydania lub przeniesienia własności liczony od zdarzenia zależnego od dewelopera (np. od uzyskania pozwolenia na użytkowanie), bez daty granicznej.\n  why it matters: Uniemożliwia ustalenie, kiedy deweloper popada w opóźnienie.\n- id: deadline-unilateral-change\n  title: Jednostronna zmiana terminu przez dewelopera\n  pattern: Deweloper może zmienić termin przez zawiadomienie nabywcy.\n  why it matters: Pozbawia nabywcę realnego wpływu na termin, od którego zależy kara.\n- id: exclusion-authorities\n  title: Wyłączenie odpowiedzialności za działania organów\n  pattern: Deweloper nie odpowiada za opóźnienie spowodowane opóźnieniami urzędów lub organów, bez ograniczenia do przyczyn od niego niezależnych.\n  why it matters: Może obejmować opóźnienia wynikające z błędów lub braków w dokumentacji dewelopera.\n- id: exclusion-broad-force-majeure\n  title: Szeroka definicja siły wyższej\n  pattern: Do siły wyższej lub okoliczności wyłączających odpowiedzialność zaliczono zdarzenia zależne od dewelopera lub typowe ryzyko inwestycyjne (np. działania podwykonawców, warunki atmosferyczne, braki materiałów, trudności finansowe).\n  why it matters: Przerzuca na nabywcę ryzyko, które powinien ponosić profesjonalny deweloper.\n- id: exclusion-utilities\n  title: Wyłączenie odpowiedzialności za przyłącza\n  pattern: Deweloper nie odpowiada za opóźnienie wynikające z działań gestorów sieci lub dostawców mediów.\n  why it matters: Organizacja przyłączy należy do typowych obowiązków dewelopera.\n- id: handover-deemed\n  title: Fikcja wydania lub odbioru lokalu\n  pattern: Lokal uważa się za wydany lub odebrany mimo niestawienia się nabywcy, odmowy odbioru z powodu wad lub bez podpisania protokołu.\n  why it matters: Może sztucznie skracać okres opóźnienia dewelopera.\n- id: jurisdiction-developer-seat\n  title: Sąd właściwy według siedziby dewelopera\n  pattern: Spory rozstrzyga sąd właściwy dla siedziby dewelopera.\n  why it matters: Utrudnia konsumentowi dochodzenie roszczeń przed sądem właściwym według przepisów ogólnych.\n- id: penalty-asymmetry\n  title: Nierówne kary dla stron\n  pattern: Kara należna nabywcy (np. za opóźnienie wydania lokalu) jest wyraźnie niższa lub węższa niż kara lub odsetki obciążające nabywcę (np. za opóźnienie w płatnościach).\n  why it matters: Nierównowaga praw i obowiązków stron na niekorzyść konsumenta.\n- id: penalty-cap-amount\n  title: Limit kary umownej jako kwota\n  pattern: Kara za opóźnienie dewelopera ograniczona do stałej kwoty.\n  why it matters: Jak wyżej — limit może czynić karę iluzoryczną przy dłuższym opóźnieniu.\n- id: penalty-cap-percent\n  title: Limit kary umownej jako procent ceny\n  pattern: Łączna kara za opóźnienie dewelopera ograniczona do stałego procentu ceny, niezależnie od długości opóźnienia.\n  why it matters: Po osiągnięciu limitu dalsze opóźnienie nie powoduje żadnych konsekwencji dla dewelopera, co może rażąco naruszać interes nabywcy, zwłaszcza gdy kary nabywcy nie są analogicznie ograniczone.\n- id: penalty-conditional-on-demand\n  title: Kara uzależniona od dodatkowych warunków formalnych\n  pattern: Prawo do kary uzależnione od wezwania w określonej formie lub terminie, pod rygorem utraty prawa do kary.\n  why it matters: Utrudnia dochodzenie roszczeń i może prowadzić do utraty prawa z przyczyn formalnych.\n- id: penalty-exclusive\n  title: Kara wyłączna — brak odszkodowania ponad karę\n  pattern: Nabywca nie może dochodzić odszkodowania przenoszącego wysokość zastrzeżonej kary umownej.\n  why it matters: Wyłącza lub ogranicza odpowiedzialność dewelopera za szkodę rzeczywiście poniesioną przez nabywcę (np. koszty najmu, odsetki od kredytu).\n- id: penalty-grace-period\n  title: Okres karencji przed naliczeniem kary\n  pattern: Kara naliczana dopiero po upływie określonej liczby dni lub miesięcy od terminu, a nie od dnia następującego po terminie.\n  why it matters: Faktycznie przesuwa termin umowny na korzyść dewelopera bez zmiany umowy.\n- id: penalty-set-off-only\n  title: Kara rozliczana wyłącznie przez potrącenie lub w określony sposób\n  pattern: Kara płatna dopiero przy umowie przenoszącej, wyłącznie przez potrącenie z ceną lub w innym trybie ograniczającym swobodę nabywcy.\n  why it matters: Odsuwa w czasie lub ogranicza możliwość uzyskania zapłaty kary.\n- id: penalty-symbolic-rate\n  title: Symboliczna stawka kary\n  pattern: Dzienna stawka kary jest bardzo niska w stosunku do ceny lokalu (np. kilka złotych dziennie lub ułamek promila ceny).\n  why it matters: Kara nie pełni funkcji kompensacyjnej ani dyscyplinującej.\n- id: waiver-in-protocol-or-deed\n  title: Zrzeczenie się roszczeń w protokole, akcie lub aneksie\n  pattern: Nabywca oświadcza w protokole odbioru, akcie przeniesienia własności lub aneksie przesuwającym termin (np. w zamian za rabat), że nie ma żadnych roszczeń wobec dewelopera lub zrzeka się roszczeń.\n  why it matters: Oświadczenie może być podnoszone przez dewelopera jako zrzeczenie się kar umownych; ocena jego skuteczności wymaga analizy prawnika.",
+  "patterns": [
+    {
+      "id": "buyer-penalty-high",
+      "title": "Wysokie kary lub odstępne obciążające nabywcę",
+      "source": "uzupełnić",
+      "verified": false
+    },
+    {
+      "id": "deadline-automatic-extension",
+      "title": "Automatyczne przedłużenie terminu",
+      "source": "uzupełnić",
+      "verified": false
+    },
+    {
+      "id": "deadline-relative",
+      "title": "Termin określony względnie",
+      "source": "uzupełnić",
+      "verified": false
+    },
+    {
+      "id": "deadline-unilateral-change",
+      "title": "Jednostronna zmiana terminu przez dewelopera",
+      "source": "uzupełnić",
+      "verified": false
+    },
+    {
+      "id": "exclusion-authorities",
+      "title": "Wyłączenie odpowiedzialności za działania organów",
+      "source": "uzupełnić",
+      "verified": false
+    },
+    {
+      "id": "exclusion-broad-force-majeure",
+      "title": "Szeroka definicja siły wyższej",
+      "source": "uzupełnić",
+      "verified": false
+    },
+    {
+      "id": "exclusion-utilities",
+      "title": "Wyłączenie odpowiedzialności za przyłącza",
+      "source": "uzupełnić",
+      "verified": false
+    },
+    {
+      "id": "handover-deemed",
+      "title": "Fikcja wydania lub odbioru lokalu",
+      "source": "uzupełnić",
+      "verified": false
+    },
+    {
+      "id": "jurisdiction-developer-seat",
+      "title": "Sąd właściwy według siedziby dewelopera",
+      "source": "uzupełnić",
+      "verified": false
+    },
+    {
+      "id": "penalty-asymmetry",
+      "title": "Nierówne kary dla stron",
+      "source": "uzupełnić",
+      "verified": false
+    },
+    {
+      "id": "penalty-cap-amount",
+      "title": "Limit kary umownej jako kwota",
+      "source": "uzupełnić",
+      "verified": false
+    },
+    {
+      "id": "penalty-cap-percent",
+      "title": "Limit kary umownej jako procent ceny",
+      "source": "uzupełnić",
+      "verified": false
+    },
+    {
+      "id": "penalty-conditional-on-demand",
+      "title": "Kara uzależniona od dodatkowych warunków formalnych",
+      "source": "uzupełnić",
+      "verified": false
+    },
+    {
+      "id": "penalty-exclusive",
+      "title": "Kara wyłączna — brak odszkodowania ponad karę",
+      "source": "uzupełnić",
+      "verified": false
+    },
+    {
+      "id": "penalty-grace-period",
+      "title": "Okres karencji przed naliczeniem kary",
+      "source": "uzupełnić",
+      "verified": false
+    },
+    {
+      "id": "penalty-set-off-only",
+      "title": "Kara rozliczana wyłącznie przez potrącenie lub w określony sposób",
+      "source": "uzupełnić",
+      "verified": false
+    },
+    {
+      "id": "penalty-symbolic-rate",
+      "title": "Symboliczna stawka kary",
+      "source": "uzupełnić",
+      "verified": false
+    },
+    {
+      "id": "waiver-in-protocol-or-deed",
+      "title": "Zrzeczenie się roszczeń w protokole, akcie lub aneksie",
+      "source": "uzupełnić",
+      "verified": false
+    }
+  ]
+}

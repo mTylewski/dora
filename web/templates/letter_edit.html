@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Projekt wezwania — {{ case.title }}{% endblock %}
+{% block content %}
+{% set draft = status.draft %}
+<section class="card">
+  <div class="row-between">
+    <h1>{{ status.template_name or "Projekt pisma" }} — {{ case.title }}{% if case.case_number %} <span class="muted">({{ case.case_number }})</span>{% endif %}</h1>
+    <a href="/cases/{{ case.id }}">← wróć do sprawy</a>
+  </div>
+  <p class="muted">Przygotowano {{ status.prepared_at[:16].replace("T", " ") }} UTC{% if status.saved_at %} · ostatni zapis {{ status.saved_at[:16].replace("T", " ") }} UTC{% endif %}.
+    Kwota żądania: {{ pln(draft.total_grosze) }} ({{ "z limitem umownym" if draft.capped else "bez limitu umownego" }}).</p>
+  {% if saved %}<p class="alert info">Zapisano zmiany.</p>{% endif %}
+  {% if status.stale %}
+  <p class="alert error">Wyliczenie w sprawie zmieniło się od przygotowania projektu
+    (teraz: {{ pln(status.current_total_grosze) if status.current_total_grosze is not none else "brak" }}).
+    Kwoty w piśmie są nieaktualne — <a href="/cases/{{ case.id }}/letter?new=1">przygotuj projekt od nowa</a>.</p>
+  {% endif %}
+  {% for w in draft.warnings %}<p class="alert warn">{{ w }}</p>{% endfor %}
+  {% if status.missing %}<p class="alert warn">Do uzupełnienia: {{ status.missing|join(", ") }}</p>{% endif %}
+
+  <form method="post" action="/cases/{{ case.id }}/letter/save" class="stack letter-edit">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    {% for key, label in placeholders.items() %}
+      {% set value = draft.values.get(key, "") %}
+      <label>{{ label }}
+        {% if key in ("intro", "demand", "justification", "legal_basis", "closing") %}
+          <textarea name="{{ key }}" rows="{{ 12 if key == 'justification' else 4 }}">{{ value }}</textarea>
+        {% else %}
+          <input name="{{ key }}" value="{{ value }}">
+        {% endif %}
+      </label>
+      {% if key == "demand" %}
+      <div>
+        <p class="small muted">Wyliczenie kary (z kalkulatora, bez edycji — zmiany kwot wprowadzasz w karcie sprawy):</p>
+        <table class="grid">
+          <thead><tr><th>Tytuł</th><th>Okres opóźnienia</th><th>Dni</th><th>Kwota</th></tr></thead>
+          <tbody>{% for r in draft.rows %}<tr>{% for c in r %}<td>{{ c }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+        </table>
+      </div>
+      {% endif %}
+    {% endfor %}
+    <p class="muted small">Akapity rozdzielaj pustą linią. Pola, których nie ma w szablonie kancelarii, nie pojawią się w piśmie.</p>
+    <div class="row">
+      <button name="action" value="save">Zapisz</button>
+      <button name="action" value="download" class="secondary">Zapisz i pobierz .docx</button>
+    </div>
+  </form>
+  <div class="row">
+    <a href="/cases/{{ case.id }}/letter?new=1">Nowe pismo / przygotuj od nowa (inny rodzaj pisma, dane lub kwota)</a>
+    <form method="post" action="/cases/{{ case.id }}/letter/discard" class="inline">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <label class="small"><input type="checkbox" required> potwierdzam</label>
+      <button class="danger">Usuń projekt</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,27 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+node_modules/
+.wrangler/
+.dev.vars
+.env
+# Never commit real client documents
+data/
+uploads/
+demo/web/dist/
+demo/.dev.vars
+demo/.deploy.json
+demo/wrangler.local.toml
+evals/runs/
+evals/reports/latest.*
+evals/contracts/*.pdf.tmp
+
+# Local test scans (not part of the repository)
+dokumenty_testowe_4_pdf/
+
+demo/web/public/ocr/
+demo/web/public/templates/

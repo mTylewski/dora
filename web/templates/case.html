@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block head %}
+{% if case.status in ("uploaded", "preparing", "analyzing") %}<meta http-equiv="refresh" content="3">{% endif %}
+{% endblock %}
+{% block title %}{{ case.title }} — Analiza roszczeń{% endblock %}
+
+{% macro doc_link(doc_id, page, text) -%}
+{%- set d = doc_id or "doc_1" -%}
+<a href="/cases/{{ case.id }}/documents/{{ d }}{% if page %}#page={{ page }}{% endif %}" target="pdfview">{{ text }}</a>
+{%- endmacro %}
+
+{% block content %}
+<div class="row-between">
+  <div>
+    <h1>{{ case.title }}</h1>
+    <form method="post" action="/cases/{{ case.id }}/meta" class="row small">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <label>Sygnatura <input name="case_number" value="{{ case.case_number or '' }}" maxlength="64"></label>
+      <label>Prawnik prowadzący
+        <select name="lawyer_id"><option value="">— brak —</option>
+          {% for lw in lawyers %}<option value="{{ lw.id }}" {% if lw.id == case.lawyer_id %}selected{% endif %}>{{ lw.full_name }}</option>{% endfor %}
+        </select></label>
+      <button class="secondary">Zapisz</button>
+    </form>
+    <form method="post" action="/cases/{{ case.id }}/as-of" class="row small">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <label>Wyliczenie na dzień <input type="date" name="as_of" value="{{ case.as_of.isoformat() }}"></label>
+      <button class="secondary">Przelicz</button>
+    </form>
+    <p class="muted">
+      <span class="badge status-{{ case.status }}">{{ status_labels.get(case.status, case.status) }}</span></p>
+  </div>
+  <div class="actions">
+    {% if case.status == "ready" %}<a class="button" href="/cases/{{ case.id }}/letter">Pismo</a>{% endif %}
+    <form method="post" action="/cases/{{ case.id }}/delete" class="inline">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <label class="small"><input type="checkbox" required> potwierdzam</label>
+      <button class="danger">Usuń sprawę</button>
+    </form>
+  </div>
+</div>
+
+{% if case.status in ("uploaded", "preparing") %}
+  <section class="card progress-card">
+    <div class="row">
+      <span class="spinner" aria-hidden="true"></span>
+      <strong>Odczyt dokumentów i anonimizacja</strong>
+    </div>
+    <progress class="progress" max="100" value="{{ case.progress_pct or 2 }}">{{ case.progress_pct or 0 }}%</progress>
+    <p>{{ case.progress or "Oczekiwanie na rozpoczęcie…" }} <span class="muted">({{ case.progress_pct or 0 }}%)</span></p>
+    <p class="muted small">Skany są odczytywane lokalnie (OCR, ok. 1 s na stronę). Nic nie jest jeszcze wysyłane do modelu. Strona odświeża się automatycznie co 3 sekundy.</p>
+  </section>
+
+{% elif case.status == "analyzing" %}
+  <section class="card progress-card">
+    <div class="row">
+      <span class="spinner" aria-hidden="true"></span>
+      <strong>Analiza dokumentów</strong>
+    </div>
+    <progress class="progress" max="100" value="{{ case.progress_pct or 2 }}">{{ case.progress_pct or 0 }}%</progress>
+    <p>{{ case.progress or "Oczekiwanie na rozpoczęcie…" }} <span class="muted">({{ case.progress_pct or 0 }}%)</span></p>
+    <p class="muted small">Do modelu trafia wyłącznie zatwierdzony, zanonimizowany tekst. Cała analiza trwa zwykle 1–2 minuty. Strona odświeża się automatycznie co 3 sekundy.</p>
+  </section>
+
+{% elif case.status == "error" %}
+  <section class="card">
+    <p class="alert error">{{ error_labels.get(case.error_code, "Wystąpił błąd.") }} (kod: {{ case.error_code }})</p>
+    <form method="post" action="/cases/{{ case.id }}/retry" data-busy="Uruchamianie…"><input type="hidden" name="csrf" value="{{ csrf }}"><button>Spróbuj ponownie</button></form>
+  </section>
+
+{% elif case.status == "awaiting_approval" %}
+  <section class="card">
+    <h2>Zatwierdzenie anonimizacji</h2>
+    <p>Poniższe dane zostaną zastąpione znacznikami przed wysłaniem tekstu do usługi modelu językowego.
+       Sprawdź podgląd tekstu — jeśli widzisz w nim dane osobowe, nie zatwierdzaj i zgłoś to administratorowi.</p>
+    <table class="grid">
+      <thead><tr><th>Oryginał (zostaje na serwerze)</th><th>Rodzaj</th><th>Po anonimizacji (wysyłane)</th></tr></thead>
+      <tbody>
+      {% for r in replacements %}<tr><td>{{ r.original }}</td><td>{{ r.label }}</td><td><code>{{ r.token }}</code></td></tr>{% endfor %}
+      </tbody>
+    </table>
+    <details>
+      <summary>Podgląd tekstu po anonimizacji</summary>
+      {% for d in preview %}
+        <h3>{{ d.id }} — {{ d.filename }}</h3>
+        {% if d.ocr_pages %}<p class="muted">Strony odczytane przez OCR: {{ d.ocr_pages|join(", ") }}</p>{% endif %}
+        {% for p in d.pages %}<pre class="page"><span class="muted">strona {{ loop.index }}</span>
+{{ p }}</pre>{% endfor %}
+      {% endfor %}
+    </details>
+    <form method="post" action="/cases/{{ case.id }}/approve" data-busy="Uruchamianie analizy…">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button>Zatwierdzam — wyślij zanonimizowany tekst do analizy</button>
+    </form>
+  </section>
+
+{% elif case.status == "ready" %}
+<div class="split">
+  <div class="left">
+
+  <p class="alert info">Wyniki są projektem przygotowanym automatycznie. Sprawdź każde pole z dokumentem źródłowym (kliknij cytat).</p>
+
+  <section class="card" id="fields">
+    <h2>Karta sprawy</h2>
+    {% set basis = (view.fields|selectattr("path", "equalto", "penalty_basis")|first).value %}
+    <table class="grid fields">
+      <thead><tr><th>Pole</th><th>Wartość</th><th>Cytat</th><th></th></tr></thead>
+      <tbody>
+      {% for f in view.fields %}
+        {% set label = field_labels.get(f.path) or (f.path.startswith("annex") and "Termin z aneksu") or "Wyłączenie odpowiedzialności" %}
+        <tr class="{% if f.needs_review %}review{% endif %}">
+          <td>{{ label }}
+            {% if f.needs_review %}<span class="badge warn">do sprawdzenia</span>{% endif %}
+            {% if f.mismatch %}<span class="badge warn">różni się od cytatu</span>{% endif %}{% if f.manual %}<span class="badge ok">wpisane przez prawnika</span>{% elif f.corrected %}<span class="badge ok">potwierdzone</span>{% endif %}
+            {% for i in view.issues if i.path == f.path %}<div class="muted small">{{ issue_labels.get(i.issue, i.issue) }}{% if i.found_page %} (str. {{ i.found_page }}){% endif %}</div>{% endfor %}
+          </td>
+          <td><strong>{{ display_value(f.path, f.value, basis) }}</strong>
+            <div class="muted small">pewność: {{ f.confidence }}</div></td>
+          <td class="quote">{% if f.manual %}<div class="muted small">Wartość wpisana ręcznie; cytat poniżej to odczyt z dokumentu.</div>{% endif %}{% if f.quote %}„{{ doc_link(f.document_id, f.page, f.quote) }}”
+            <div class="muted small">{{ f.document_id or "doc_1" }}, str. {{ f.page or "?" }}</div>{% else %}<span class="muted">—</span>{% endif %}</td>
+          <td class="edit">
+            {% if f.path in editable or f.path.startswith("annex_deadlines") %}
+            <form method="post" action="/cases/{{ case.id }}/fields" class="stack small">
+              <input type="hidden" name="csrf" value="{{ csrf }}">
+              <input type="hidden" name="path" value="{{ f.path }}">
+              <input name="value" value="{{ edit_value(f.path, f.value) }}" placeholder="{{ edit_hint(f.path) }}" title="{{ 'Niepotwierdzone przez prawnika. ' if not f.corrected }}{{ edit_hint(f.path) }}"{% if not f.corrected %} class="unconfirmed"{% endif %}{% if f.path == "price_gross" %} data-format="amount"{% endif %}>
+              <div class="row">
+                <button name="action" value="correct">Potwierdź</button>
+                {% if f.manual %}<button name="action" value="revert" class="secondary" formnovalidate>Przywróć z dokumentu</button>{% endif %}
+              </div>
+            </form>
+            {% endif %}
+            {% if f.quote_amount %}
+            <form method="post" action="/cases/{{ case.id }}/fields" class="small">
+              <input type="hidden" name="csrf" value="{{ csrf }}">
+              <input type="hidden" name="path" value="{{ f.path }}">
+              <input type="hidden" name="value" value="{{ f.quote_amount }}">
+              <button class="secondary" title="Wpisuje kwotę z cytatu obok">Wstaw z cytatu: {{ pln((f.quote_amount * 100)|int) }}</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card" id="calculation">
+    <h2>Wyliczenie kary</h2>
+    {% set calc = view.calculation %}
+    {% for b in calc.blocking %}<p class="alert error">{{ b }}</p>{% endfor %}
+    {% for w in calc.warnings %}<p class="alert warn">{{ w }}</p>{% endfor %}
+    {% if calc.result %}
+      {% for p in calc.result.penalties %}
+        <h3>{{ "Opóźnienie w wydaniu lokalu" if p.event == "handover_delay" else "Opóźnienie w zawarciu umowy przenoszącej" }}</h3>
+        <table class="grid steps">
+          <thead><tr><th>Krok</th><th>Wzór / dane</th><th>Wynik</th></tr></thead>
+          <tbody>{% for s in p.steps %}<tr><td>{{ s.label }}</td><td>{{ s.formula }}</td><td>{{ s.result }}</td></tr>{% endfor %}</tbody>
+        </table>
+        {% for w in p.warnings %}<p class="alert warn small">{{ w }}</p>{% endfor %}
+      {% endfor %}
+      {% for s in calc.result.skipped %}<p class="alert warn">Nie wyliczono: {{ s }}</p>{% endfor %}
+      <table class="grid totals">
+        <tr><th>Razem bez limitu</th><td>{{ pln(calc.result.total_uncapped_grosze) }}</td></tr>
+        <tr><th>Razem z limitem umownym</th><td>{{ pln(calc.result.total_capped_grosze) }}</td></tr>
+      </table>
+      <h3>Oś czasu</h3>
+      <ol class="timeline">
+        {% for t in calc.result.timeline %}<li class="kind-{{ t.kind }}"><strong>{{ t.date[8:10] }}.{{ t.date[5:7] }}.{{ t.date[0:4] }}</strong> {{ t.label }}</li>{% endfor %}
+      </ol>
+    {% endif %}
+  </section>
+
+  <section class="card" id="clauses">
+    <h2>Klauzule do oceny</h2>
+    {% if not view.clauses %}<p>Nie wskazano klauzul pasujących do wzorców z biblioteki.</p>{% endif %}
+    {% for c in view.clauses %}
+      {% set pattern = library.get(c.clause_id) %}
+      <article class="clause {% if c.needs_review %}review{% endif %}">
+        <h3>{{ pattern.title if pattern else c.clause_id }} <span class="badge">{{ c.confidence }}</span>
+          {% if c.needs_review %}<span class="badge warn">cytat do sprawdzenia</span>{% endif %}</h3>
+        <blockquote>„{{ doc_link(c.document_id, c.page, c.quote) }}” <span class="muted small">({{ c.document_id or "doc_1" }}, str. {{ c.page or "?" }})</span></blockquote>
+        <p>{{ c.reasoning }}</p>
+        {% if pattern %}<p class="muted small">Źródło wzorca: {{ pattern.source or "brak" }}{% if not pattern.verified %} · niezweryfikowane{% endif %}</p>{% endif %}
+      </article>
+    {% endfor %}
+  </section>
+
+  <section class="card">
+    <h2>Dokumenty</h2>
+    <ul>
+    {% for d in case.documents %}<li>{{ doc_link(d.doc_id, None, d.filename) }} — {{ d.doc_type or "?" }} ({{ d.doc_id }})</li>{% endfor %}
+    </ul>
+    <p class="muted small">Czas analizy: {% for k, v in view.timings_ms.items() %}{{ k }} {{ (v / 1000)|round(1) }} s{% if not loop.last %}, {% endif %}{% endfor %}</p>
+  </section>
+  </div>
+
+  <aside class="right">
+    <iframe name="pdfview" title="Podgląd dokumentu" src="/cases/{{ case.id }}/documents/doc_1"></iframe>
+  </aside>
+</div>
+{% endif %}
+{% endblock %}

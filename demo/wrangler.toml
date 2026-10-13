@@ -1,0 +1,30 @@
+# Cloudflare Worker for the demo (Stage A).
+# Template: copy to wrangler.local.toml (not in git), fill in your own values and deploy with
+#   npx wrangler deploy -c wrangler.local.toml
+# Secrets: wrangler secret put ANTHROPIC_API_KEY ; wrangler secret put ADMIN_KEY (invitation admin, see scripts/invite.mjs)
+# Check current Workers limits (CPU time, request size, duration) for your plan before the demo:
+# https://developers.cloudflare.com/workers/platform/limits/
+name = "dora-api"
+main = "worker/src/index.ts"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# Origins of the demo page (Cloudflare Pages URL, custom domain, local dev).
+ALLOWED_ORIGINS = "https://dora-demo.<your-subdomain>.workers.dev,http://localhost:5173,http://127.0.0.1:5173"
+MAX_DOCUMENTS = "10"
+MAX_TOTAL_CHARS = "1500000"
+REFUSAL_FALLBACK = "true"
+
+# Invitation links: token hash -> holder, limit, expiry, usage (scripts/invite.mjs).
+[[kv_namespaces]]
+binding = "INVITES"
+id = "<KV_NAMESPACE_ID>"  # npx wrangler kv namespace create INVITES
+
+[[rules]]
+type = "Text"
+globs = ["**/*.md"]
+fallthrough = true
+
+[observability]
+enabled = true

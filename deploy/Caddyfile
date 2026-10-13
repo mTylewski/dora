@@ -1,0 +1,20 @@
+# TLS termination. Replace the host name.
+# Public DNS name: Caddy obtains a certificate automatically (needs ports 80/443 reachable).
+# Internal-only host: uncomment `tls internal` and install Caddy's root CA on the lawyers' computers.
+
+claims.example-kancelaria.pl {
+	# tls internal
+	encode gzip
+	request_body {
+		max_size 60MB
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+	reverse_proxy web:8000
+	log {
+		output stdout
+		format json
+	}
+}

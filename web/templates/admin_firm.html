@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Kancelaria</h1>
+{% if saved %}<p class="alert info">Zapisano.</p>{% endif %}
+<section class="card">
+  <h2>Dane kancelarii</h2>
+  <p class="muted small">Używane w pismach (nagłówek, miejscowość, rachunek) i przy zakładaniu spraw.</p>
+  <form method="post" action="/admin/firm" class="stack">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Nazwa kancelarii <input name="name" value="{{ settings.name }}" required></label>
+    <label>Adres <input name="address" value="{{ settings.address }}"></label>
+    <div class="row">
+      <label>Miejscowość (w nagłówku pisma) <input name="city" value="{{ settings.city }}"></label>
+      <label>Termin zapłaty w wezwaniach (dni) <input name="payment_deadline_days" type="number" min="1" value="{{ settings.payment_deadline_days }}"></label>
+    </div>
+    <label>Domyślny rachunek do zapłaty <input name="bank_account" value="{{ settings.bank_account }}"></label>
+    <label>Wzór sygnatury sprawy <input name="case_number_pattern" value="{{ settings.case_number_pattern }}"></label>
+    <p class="muted small"><code>{rok}</code> — bieżący rok, <code>{nr}</code> — kolejny numer w roku. Następna sygnatura: <strong>{{ example }}</strong></p>
+    <label>Podstawa prawna (tekst domyślny w pismach, do zatwierdzenia przez prawnika)
+      <textarea name="legal_basis" rows="3">{{ settings.legal_basis }}</textarea></label>
+    <button>Zapisz</button>
+  </form>
+</section>
+
+<section class="card" id="lawyers">
+  <h2>Prawnicy</h2>
+  <p class="muted small">Prawnik podpisujący pismo i prowadzący sprawę. Powiązanie z kontem użytkownika ustawia go domyślnie w jego sprawach.</p>
+  {% for lw in lawyers %}
+  <form id="lw-{{ lw.id }}" method="post" action="/admin/firm/lawyers">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="lawyer_id" value="{{ lw.id }}">
+  </form>
+  {% endfor %}
+  <form id="lw-new" method="post" action="/admin/firm/lawyers">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="active" value="yes">
+  </form>
+  <table class="grid">
+    <thead><tr><th>Imię i nazwisko</th><th>Tytuł</th><th>Nr wpisu</th><th>Konto</th><th>Aktywny</th><th></th></tr></thead>
+    <tbody>
+    {% for lw in lawyers %}
+      {% set f = "lw-" ~ lw.id %}
+      <tr>
+        <td><input form="{{ f }}" name="full_name" value="{{ lw.full_name }}" required></td>
+        <td><select form="{{ f }}" name="title">{% for t in titles %}<option {% if t == lw.title %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></td>
+        <td><input form="{{ f }}" name="registry_no" value="{{ lw.registry_no }}"></td>
+        <td><select form="{{ f }}" name="user_id"><option value="">—</option>{% for u in users %}<option value="{{ u.id }}" {% if u.id == lw.user_id %}selected{% endif %}>{{ u.email }}</option>{% endfor %}</select></td>
+        <td><select form="{{ f }}" name="active"><option value="yes" {% if lw.active %}selected{% endif %}>tak</option><option value="no" {% if not lw.active %}selected{% endif %}>nie</option></select></td>
+        <td><button form="{{ f }}" class="secondary">Zapisz</button></td>
+      </tr>
+    {% endfor %}
+      <tr>
+        <td><input form="lw-new" name="full_name" placeholder="imię i nazwisko" required></td>
+        <td><select form="lw-new" name="title">{% for t in titles %}<option>{{ t }}</option>{% endfor %}</select></td>
+        <td><input form="lw-new" name="registry_no" placeholder="np. WAW/Adw/1234"></td>
+        <td><select form="lw-new" name="user_id"><option value="">—</option>{% for u in users %}<option value="{{ u.id }}">{{ u.email }}</option>{% endfor %}</select></td>
+        <td>nowy</td>
+        <td><button form="lw-new">Dodaj</button></td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+{% endblock %}

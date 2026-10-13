@@ -1,0 +1,81 @@
+# Runs on the law firm's server. All state lives under ${CLAIMS_ROOT} (encrypted volume).
+# Start: docker compose --env-file ${CLAIMS_ROOT}/config/.env up -d
+
+name: claims
+
+x-app: &app
+  image: ${CLAIMS_IMAGE:?set CLAIMS_IMAGE (registry/claims-app@sha256:...)}
+  restart: unless-stopped
+  env_file: ${CLAIMS_ROOT}/config/.env
+  environment:
+    CLAIMS_DATABASE_URL: postgresql+psycopg://claims:${POSTGRES_PASSWORD}@db:5432/claims
+    CLAIMS_REDIS_URL: redis://redis:6379/0
+    CLAIMS_DATA_DIR: /data
+    CLAIMS_CONFIG_DIR: /config
+  volumes:
+    - ${CLAIMS_ROOT}/files:/data
+    - ${CLAIMS_ROOT}/config/app:/config:ro
+  depends_on:
+    db: { condition: service_healthy }
+    redis: { condition: service_started }
+  read_only: true
+  tmpfs: [/tmp]
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+
+services:
+  web:
+    <<: *app
+    networks: [internal, egress]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  worker:
+    <<: *app
+    command: ["rq", "worker", "claims", "--url", "redis://redis:6379/0", "--with-scheduler"]
+    networks: [internal, egress]
+
+  db:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: claims
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: claims
+    volumes:
+      - ${CLAIMS_ROOT}/postgres:/var/lib/postgresql/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U claims"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    security_opt: [no-new-privileges:true]
+
+  redis:
+    image: redis:7-bookworm
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    networks: [internal]
+    security_opt: [no-new-privileges:true]
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ${CLAIMS_ROOT}/config/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${CLAIMS_ROOT}/caddy:/data
+    networks: [internal, egress]
+    depends_on: [web]
+
+networks:
+  internal:
+    internal: true  # db and redis have no route outside
+  egress:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-claims

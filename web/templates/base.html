@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Analiza roszczeń{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/app.js" defer></script>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">Analiza roszczeń</a>
+    {% if user %}
+    <nav>
+      <a href="/">Sprawy</a>
+      <a href="/cases/new">Nowa sprawa</a>
+      {% if user.role == "admin" %}<a href="/admin/firm">Kancelaria</a><a href="/admin/users">Użytkownicy</a><a href="/admin/templates">Szablony</a><a href="/admin/log">Dziennik</a>{% endif %}
+      <span class="muted">{{ user.email }}</span>
+      <form method="post" action="/logout" class="inline">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <button class="link">Wyloguj</button>
+      </form>
+    </nav>
+    {% endif %}
+  </header>
+  <main>
+    {% if error %}<div class="alert error">{{ error }}</div>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="muted">System przygotowuje projekt analizy do weryfikacji. Decyzję podejmuje i pismo podpisuje prawnik.</footer>
+</body>
+</html>

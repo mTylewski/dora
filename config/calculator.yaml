@@ -1,0 +1,27 @@
+# Calculator parameters. Values marked verified: false are assumptions
+# that must be confirmed by a lawyer (CLAUDE.md, section 13).
+
+day_count:
+  # Delay is counted from the day after the deadline up to the actual date.
+  # include_actual_date: true  -> actual date counts as a day of delay
+  # include_actual_date: false -> actual date is not counted
+  include_actual_date: true
+  source: "do potwierdzenia z prawnikiem"
+  verified: false
+
+# Money rounding to full grosze (applied once, on the final amount).
+rounding: ROUND_HALF_UP
+
+# Day-count basis for statutory interest (actual days / year_days).
+interest_year_days: 365
+
+# Which table from statutory_interest.yaml applies when the penalty basis is
+# statutory interest: statutory | late_payment. To be confirmed by a lawyer.
+statutory_interest_kind: late_payment
+
+# Development act regime. Agreements concluded before `new_act_from` may be governed by the
+# previous act (transitional provisions). The tool only flags the period; it does not apply any rule.
+development_act:
+  new_act_from: 2022-07-01
+  source: "uzupełnić: ustawa deweloperska z 2021 r. — data wejścia w życie i przepisy przejściowe"
+  verified: false

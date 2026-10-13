@@ -1,0 +1,55 @@
+{
+  "$defs": {
+    "Confidence": {
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ],
+      "type": "string"
+    },
+    "DocumentClass": {
+      "additionalProperties": false,
+      "properties": {
+        "document_id": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/DocumentType"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        }
+      },
+      "required": [
+        "document_id",
+        "type",
+        "confidence"
+      ],
+      "type": "object"
+    },
+    "DocumentType": {
+      "enum": [
+        "development_agreement",
+        "annex",
+        "handover_protocol",
+        "transfer_deed",
+        "other"
+      ],
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "documents": {
+      "items": {
+        "$ref": "#/$defs/DocumentClass"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "documents"
+  ],
+  "type": "object"
+}
