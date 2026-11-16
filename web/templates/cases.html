@@ -4,6 +4,30 @@
   <h1>Sprawy</h1>
   <a class="button" href="/cases/new">Nowa sprawa</a>
 </div>
+
+{% if evaluation %}
+{% set e = evaluation %}
+<section class="card eval-panel" id="evaluation">
+  <div class="row-between">
+    <h2>Ewaluacja — ostatnie 30 dni</h2>
+    <a class="button secondary" href="/admin/usage" target="dora_eval">Otwórz okno ewaluacji</a>
+  </div>
+  <div class="stats">
+    <div class="stat"><span class="stat-value">{{ e.analyzed|length }}</span><span class="stat-label">przeanalizowane sprawy</span></div>
+    <div class="stat"><span class="stat-value">{{ "%.0f s"|format(e.avg_analyze_s) if e.avg_analyze_s is not none else "—" }}</span><span class="stat-label">średni czas analizy</span></div>
+    <div class="stat"><span class="stat-value">{{ usd(e.avg_cost_microusd) }}</span><span class="stat-label">średni koszt sprawy (szac.)</span></div>
+    <div class="stat"><span class="stat-value">{{ usd(e.total.cost_microusd) }}</span><span class="stat-label">koszt łącznie (szac.)</span></div>
+    <div class="stat"><span class="stat-value">{{ "%.1f"|format(e.avg_needs_review) if e.avg_needs_review is not none else "—" }}</span><span class="stat-label">pól do sprawdzenia na sprawę</span></div>
+    <div class="stat"><span class="stat-value">{{ "%.0f%%"|format(e.corrected_share * 100) if e.corrected_share is not none else "—" }}</span><span class="stat-label">pól poprawionych przez prawnika</span></div>
+    <div class="stat"><span class="stat-value">{{ e.failed_analyses }}</span><span class="stat-label">nieudane analizy</span></div>
+  </div>
+  {% set worst = e.fields|selectattr("corrected")|list %}
+  {% if worst %}<p class="small">Najczęściej poprawiane pola:
+    {% for f in worst[:3] %}{% set base = f.field.split("[")[0] %}<strong>{{ field_labels.get(base, base) }}</strong> ({{ f.corrected }}/{{ f.confirmed + f.corrected }}){% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+  <p class="muted small">Dane techniczne bez treści dokumentów. Pełne zestawienie i eksport CSV w oknie ewaluacji.</p>
+</section>
+{% endif %}
+
 <p class="muted">Sprawy są usuwane automatycznie po {{ retention }} dniach od utworzenia.</p>
 {% if cases %}
 <table class="grid">

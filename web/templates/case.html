@@ -88,9 +88,20 @@
 {{ p }}</pre>{% endfor %}
       {% endfor %}
     </details>
+    {% set blocking = text_report|selectattr("blocking")|list %}
+    {% for t in text_report %}
+      {% if t.blocking %}
+      <p class="alert error">Dokument <strong>{{ t.filename }}</strong> nie zawiera odczytanego tekstu (żadna z {{ t.page_count }} stron).
+        {% if ocr_available %}OCR nie rozpoznał tekstu — sprawdź jakość skanu.{% else %}To prawdopodobnie skan, a OCR (Tesseract z językiem polskim) nie jest dostępny na serwerze — zgłoś to administratorowi.{% endif %}
+        Analiza takiego dokumentu nie jest możliwa. Usuń sprawę i wgraj dokumenty ponownie po usunięciu problemu.</p>
+      {% else %}
+      <p class="alert warn">Dokument <strong>{{ t.filename }}</strong>: brak tekstu na stronach {{ t.empty_pages|join(", ") }} (z {{ t.page_count }}).
+        Informacje z tych stron nie zostaną przeanalizowane.</p>
+      {% endif %}
+    {% endfor %}
     <form method="post" action="/cases/{{ case.id }}/approve" data-busy="Uruchamianie analizy…">
       <input type="hidden" name="csrf" value="{{ csrf }}">
-      <button>Zatwierdzam — wyślij zanonimizowany tekst do analizy</button>
+      <button {% if blocking %}disabled class="blocked" title="Nie można wysłać dokumentu bez tekstu"{% endif %}>Zatwierdzam — wyślij zanonimizowany tekst do analizy</button>
     </form>
   </section>
 
@@ -111,11 +122,11 @@
         <tr class="{% if f.needs_review %}review{% endif %}">
           <td>{{ label }}
             {% if f.needs_review %}<span class="badge warn">do sprawdzenia</span>{% endif %}
-            {% if f.mismatch %}<span class="badge warn">różni się od cytatu</span>{% endif %}{% if f.manual %}<span class="badge ok">wpisane przez prawnika</span>{% elif f.corrected %}<span class="badge ok">potwierdzone</span>{% endif %}
+            {% if f.mismatch %}<span class="badge warn">różni się od cytatu</span>{% endif %}{% if f.manual %}<span class="badge ok">wpisane przez prawnika</span>{% elif f.corrected and f.absent %}<span class="badge warn">potwierdzony brak w dokumencie</span>{% elif f.corrected %}<span class="badge ok">potwierdzone</span>{% endif %}
             {% for i in view.issues if i.path == f.path %}<div class="muted small">{{ issue_labels.get(i.issue, i.issue) }}{% if i.found_page %} (str. {{ i.found_page }}){% endif %}</div>{% endfor %}
           </td>
-          <td><strong>{{ display_value(f.path, f.value, basis) }}</strong>
-            <div class="muted small">pewność: {{ f.confidence }}</div></td>
+          <td>{% if f.absent %}<span class="muted">brak w dokumencie</span>{% else %}<strong>{{ display_value(f.path, f.value, basis) }}</strong>
+            <div class="muted small">pewność: {{ f.confidence }}</div>{% endif %}</td>
           <td class="quote">{% if f.manual %}<div class="muted small">Wartość wpisana ręcznie; cytat poniżej to odczyt z dokumentu.</div>{% endif %}{% if f.quote %}„{{ doc_link(f.document_id, f.page, f.quote) }}”
             <div class="muted small">{{ f.document_id or "doc_1" }}, str. {{ f.page or "?" }}</div>{% else %}<span class="muted">—</span>{% endif %}</td>
           <td class="edit">
@@ -123,7 +134,14 @@
             <form method="post" action="/cases/{{ case.id }}/fields" class="stack small">
               <input type="hidden" name="csrf" value="{{ csrf }}">
               <input type="hidden" name="path" value="{{ f.path }}">
+              {% set choices = edit_choices(f.path, f.value) %}
+              {% if choices %}
+              <select name="value" title="{{ 'Niepotwierdzone przez prawnika.' if not f.corrected }}"{% if not f.corrected %} class="unconfirmed"{% endif %}>
+                {% for code, text, selected in choices %}<option value="{{ code }}"{% if selected %} selected{% endif %}>{{ text }}</option>{% endfor %}
+              </select>
+              {% else %}
               <input name="value" value="{{ edit_value(f.path, f.value) }}" placeholder="{{ edit_hint(f.path) }}" title="{{ 'Niepotwierdzone przez prawnika. ' if not f.corrected }}{{ edit_hint(f.path) }}"{% if not f.corrected %} class="unconfirmed"{% endif %}{% if f.path == "price_gross" %} data-format="amount"{% endif %}>
+              {% endif %}
               <div class="row">
                 <button name="action" value="correct">Potwierdź</button>
                 {% if f.manual %}<button name="action" value="revert" class="secondary" formnovalidate>Przywróć z dokumentu</button>{% endif %}

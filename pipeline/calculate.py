@@ -10,7 +10,7 @@ from pathlib import Path
 import yaml
 
 from calculator.case import CaseInput, CaseResult, calculate_case, load_calc_config
-from calculator.core import Amendment, Basis, Cap, Event, Terms
+from calculator.core import Amendment, Basis, Cap, Event, Terms, fmt_percent
 from calculator.money import round_grosze
 from calculator.rates import load_rate_table
 from pipeline.schema import Extraction
@@ -28,6 +28,11 @@ FIELD_LABELS = {
     "actual_handover_date": "data wydania lokalu",
     "actual_transfer_date": "data umowy przenoszącej",
 }
+
+
+# A daily penalty above 0,5% of the price is far outside what development agreements use
+# (typically hundredths of a percent); most likely a typo such as "0,02" instead of "0,02%".
+HIGH_DAILY_RATE = Decimal("0.005")
 
 
 @dataclass
@@ -103,6 +108,13 @@ def calculate_from_extraction(
         cap=cap,
         interest_table=table,
     )
+
+    if basis is Basis.PERCENT_OF_PRICE_PER_DAY and terms.rate is not None and terms.rate > HIGH_DAILY_RATE:
+        outcome.warnings.append(
+            f"Nietypowo wysoka stawka: {fmt_percent(terms.rate)} ceny za każdy dzień. "
+            f"Sprawdź, czy nie chodziło o {fmt_percent(terms.rate / 100)} (wpis „0,02” oznacza 2%, "
+            "a „0,02%” — 0,02%)."
+        )
 
     if ex.penalty_events.value:
         events = tuple(Event(e.value) for e in ex.penalty_events.value)

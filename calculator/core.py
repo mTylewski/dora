@@ -13,7 +13,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum
 
 from calculator.money import format_pln, round_grosze
-from calculator.rates import RateTable
+from calculator.rates import RateTable, RateTableError
 
 ONE_DAY = dt.timedelta(days=1)
 
@@ -184,7 +184,12 @@ def statutory_interest(
     exact = Decimal(0)
     day = first_day
     while day <= last_day:
-        period = table.rate_for(day)
+        try:
+            period = table.rate_for(day)
+        except RateTableError as exc:
+            raise CalculationError(
+                f"brak stawki odsetek ustawowych dla dnia {fmt_date(day)} — uzupełnij config/statutory_interest.yaml"
+            ) from exc
         seg_end = last_day if period.end is None else min(period.end, last_day)
         days = (seg_end - day).days + 1
         segments.append(InterestSegment(day, seg_end, days, period.rate, period.source))
@@ -235,7 +240,10 @@ def compute_penalty(
         f"od {fmt_date(first)} do {end_label}, {inclusion} dnia końcowego",
         str(days),
     ))
-    if ongoing:
+    if ongoing and end <= eff.deadline:
+        warnings.append(f"Termin {fmt_date(eff.deadline)} jeszcze nie upłynął na dzień {fmt_date(end)} — "
+                        "brak opóźnienia. Zmień „Wyliczenie na dzień”, aby policzyć karę na późniejszą datę.")
+    elif ongoing:
         warnings.append(f"Brak daty faktycznej — opóźnienie liczone na dzień {fmt_date(as_of)}.")
     if not config.verified:
         warnings.append("Sposób liczenia dni nie został potwierdzony przez prawnika (config/calculator.yaml).")

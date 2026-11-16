@@ -17,7 +17,7 @@ EDITABLE = {
     "handover_deadline": "date",
     "transfer_deadline": "date",
     "penalty_basis": "basis",
-    "penalty_rate": "decimal",
+    "penalty_rate": "rate",
     "penalty_cap": "cap",
     "penalty_events": "events",
     "exclusive_penalty_clause": "bool",
@@ -104,6 +104,10 @@ def parse_value(kind: str, raw: str) -> Any:
     if raw == "" or raw.lower() in ("brak", "null"):
         return None
     if kind == "decimal":
+        return str(parse_decimal(raw))
+    if kind == "rate":  # "0,02%" -> 0.0002; a plain number is a fraction (or zł/day for a fixed penalty)
+        if raw.endswith("%"):
+            return str(parse_decimal(raw[:-1].strip()) / 100)
         return str(parse_decimal(raw))
     if kind == "date":
         return parse_date(raw)

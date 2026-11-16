@@ -8,6 +8,7 @@ import datetime as dt
 import io
 from pathlib import Path
 from typing import Annotated
+from urllib.parse import urlencode
 
 import qrcode
 import qrcode.image.svg
@@ -31,9 +32,11 @@ from app.auth import (
 from app.corrections import EDITABLE, CorrectionError
 from app import firm
 from app.db import AccessLog, Case, Lawyer, User
-from app.presenters import ISSUE_LABELS, display_value, edit_hint, edit_value
+from app.presenters import ISSUE_LABELS, display_value, edit_choices, edit_hint, edit_value
 from app.services import Queue, Services
+from app.usage import EXPORTS, build_report, export_csv
 from calculator.money import format_pln
+from pipeline.usage import format_usd
 from pipeline.clauses import load_library
 from pipeline.letter import PLACEHOLDERS, TABLE_PLACEHOLDER
 
@@ -42,6 +45,7 @@ DOCX_MEDIA = "application/vnd.openxmlformats-officedocument.wordprocessingml.doc
 ROLE_LABELS = {"buyer": "nabywca", "seller": "sprzedający", "representative": "pełnomocnik / przedstawiciel",
                "notary": "notariusz", None: "osoba z dokumentu"}
 SESSION_HOURS = 8
+LOOPBACK_HOSTS = {"127.0.0.1", "::1"}
 
 FIELD_LABELS = {
     "developer_name": "Deweloper",
@@ -93,6 +97,7 @@ def create_app(services: Services) -> FastAPI:
     templates.env.globals.update(
         field_labels=FIELD_LABELS, status_labels=STATUS_LABELS, error_labels=ERROR_LABELS, pln=format_pln,
         issue_labels=ISSUE_LABELS, display_value=display_value, edit_value=edit_value, edit_hint=edit_hint,
+        edit_choices=edit_choices,
     )
     throttle = Throttle()
 
@@ -112,12 +117,42 @@ def create_app(services: Services) -> FastAPI:
         return request.client.host if request.client else None
 
     def render(request: Request, name: str, user: User | None = None, **ctx) -> HTMLResponse:
-        return templates.TemplateResponse(request, name, {"user": user, "csrf": csrf_token(request), **ctx})
+        return templates.TemplateResponse(request, name, {"user": user, "csrf": csrf_token(request),
+                                                          "local_mode": bool(services.settings.local_auto_login),
+                                                          **ctx})
+
+    def login_redirect(request: Request) -> str:
+        """Login URL that returns to the requested page afterwards (GET pages only)."""
+        if request.method == "GET" and request.url.path not in ("/", "/login"):
+            target = request.url.path + (f"?{request.url.query}" if request.url.query else "")
+            return "/login?" + urlencode({"next": target})
+        return "/login"
+
+    def local_user(request: Request) -> User | None:
+        """Local single-user mode: log in automatically, but only for requests from this computer."""
+        wanted = services.settings.local_auto_login
+        if not wanted or not request.client or request.client.host not in LOOPBACK_HOSTS:
+            return None
+        with services.sessions() as db:
+            q = select(User).where(User.active.is_(True))
+            q = q.where(User.role == "admin").order_by(User.id) if wanted == "auto" else \
+                q.where(User.email == wanted.lower())
+            user = db.scalars(q).first()
+            if user is None:
+                return None
+            services.audit(db, user.id, None, "login_local", ip(request))
+            db.commit()
+        request.session.clear()
+        request.session["user_id"] = user.id
+        return user
 
     def current_user(request: Request) -> User:
         user_id = request.session.get("user_id")
         if not user_id:
-            raise HTTPException(status_code=303, headers={"Location": "/login"})
+            user = local_user(request)
+            if user is not None:
+                return user
+            raise HTTPException(status_code=303, headers={"Location": login_redirect(request)})
         with services.sessions() as db:
             user = db.get(User, user_id)
         if user is None or not user.active:
@@ -147,22 +182,33 @@ def create_app(services: Services) -> FastAPI:
     # --- auth -------------------------------------------------------------------
 
     @app.get("/login", response_class=HTMLResponse)
-    def login_form(request: Request):
-        return render(request, "login.html")
+    def login_form(request: Request, next: str = "/"):
+        if request.session.get("user_id") or local_user(request):
+            return RedirectResponse(safe_next(next), status_code=303)
+        return render(request, "login.html", next=safe_next(next))
+
+    @app.get("/session")
+    def session_state(request: Request):
+        """204 when logged in, 401 otherwise. Lets a second window (e.g. the evaluation window
+        opened by the desktop launcher) continue once the user has logged in in another window."""
+        return Response(status_code=204 if request.session.get("user_id") else 401)
 
     @app.post("/login")
-    def login(request: Request, email: Annotated[str, Form()], password: Annotated[str, Form()], csrf: Csrf):
+    def login(request: Request, email: Annotated[str, Form()], password: Annotated[str, Form()], csrf: Csrf,
+              next: Annotated[str, Form()] = "/"):
         check_csrf(request, csrf)
         key = f"{ip(request)}:{email.lower()}"
         if throttle.blocked(key):
-            return render(request, "login.html", error="Zbyt wiele prób. Spróbuj ponownie za 15 minut.")
+            return render(request, "login.html", next=safe_next(next),
+                          error="Zbyt wiele prób. Spróbuj ponownie za 15 minut.")
         with services.sessions() as db:
             user = db.scalar(select(User).where(User.email == email.lower().strip()))
         if user is None or not user.active or not verify_password(user.password_hash, password):
             throttle.fail(key)
-            return render(request, "login.html", error="Nieprawidłowy e-mail lub hasło.")
+            return render(request, "login.html", next=safe_next(next), error="Nieprawidłowy e-mail lub hasło.")
         request.session.clear()
         request.session["pending_user"] = user.id
+        request.session["next"] = safe_next(next)
         return RedirectResponse("/login/totp", status_code=303)
 
     @app.get("/login/totp", response_class=HTMLResponse)
@@ -189,9 +235,10 @@ def create_app(services: Services) -> FastAPI:
             services.audit(db, user.id, None, "login", ip(request))
             db.commit()
         throttle.reset(key)
+        target = safe_next(request.session.get("next", "/"))
         request.session.clear()
         request.session["user_id"] = user.id
-        return RedirectResponse("/", status_code=303)
+        return RedirectResponse(target, status_code=303)
 
     @app.post("/logout")
     def logout(request: Request, csrf: Csrf):
@@ -206,8 +253,13 @@ def create_app(services: Services) -> FastAPI:
         with services.sessions() as db:
             cases = list(db.scalars(select(Case).order_by(Case.created_at.desc()).limit(200)))
             lawyers = {lw.id: lw.full_name for lw in db.scalars(select(Lawyer))}
+            # Evaluation panel on the dashboard (admin only): last 30 days.
+            evaluation = None
+            if user.role == "admin":
+                since = dt.datetime.now(dt.UTC).replace(tzinfo=None) - dt.timedelta(days=30)
+                evaluation = build_report(db, since)
         return render(request, "cases.html", user, cases=cases, lawyers=lawyers,
-                      retention=services.settings.retention_days)
+                      retention=services.settings.retention_days, evaluation=evaluation, usd=format_usd)
 
     def new_case_page(request: Request, user: User, **ctx):
         with services.sessions() as db:
@@ -264,6 +316,8 @@ def create_app(services: Services) -> FastAPI:
         if case.status == "awaiting_approval":
             ctx["replacements"] = services.replacements(case)
             ctx["preview"] = services.anonymized_preview(case)
+            ctx["text_report"] = services.text_report(case)
+            ctx["ocr_available"] = services.ocr is not None
         if case.status == "ready":
             view = services.case_view(case)
             library = {p.id: p for p in load_library()}
@@ -552,11 +606,39 @@ def create_app(services: Services) -> FastAPI:
             emails = {u.id: u.email for u in db.scalars(select(User))}
         return render(request, "admin_log.html", user, entries=entries, emails=emails, case_id=case_id)
 
+    @app.get("/admin/usage", response_class=HTMLResponse)
+    def admin_usage(request: Request, user: AdminDep, days: int | None = None):
+        since = dt.datetime.now(dt.UTC).replace(tzinfo=None) - dt.timedelta(days=days) if days else None
+        with services.sessions() as db:
+            report = build_report(db, since)
+        return render(request, "admin_usage.html", user, report=report, days=days, usd=format_usd,
+                      pricing=services.pricing, field_labels=FIELD_LABELS, exports=EXPORTS)
+
+    @app.get("/admin/usage/{name}.csv")
+    def admin_usage_csv(request: Request, name: str, user: AdminDep):
+        if name not in EXPORTS:
+            raise HTTPException(status_code=404)
+        with services.sessions() as db:
+            text = export_csv(db, name)
+            services.audit(db, user.id, None, f"usage_export:{name}", ip(request))
+            db.commit()
+        stamp = dt.date.today().isoformat()
+        return Response("﻿" + text, media_type="text/csv; charset=utf-8",  # BOM: Excel reads UTF-8
+                        headers={"Content-Disposition": f'attachment; filename="dora_{name}_{stamp}.csv"'})
+
     @app.get("/healthz")
     def healthz():
         return Response("ok", media_type="text/plain")
 
     return app
+
+
+def safe_next(target: str | None) -> str:
+    """Only local paths are allowed after login (no open redirect)."""
+    if not target or not target.startswith("/") or target.startswith("//") or "\\" in target \
+            or target.startswith("/login"):
+        return "/"
+    return target
 
 
 def create_user(services: Services, email: str, password: str, role: str = "lawyer") -> User:
@@ -581,6 +663,8 @@ def qr_svg(data: str) -> str:
 
 def build() -> FastAPI:  # pragma: no cover - production entry point
     """uvicorn app.main:build --factory"""
-    from app.factory import build_services
+    from app.factory import build_services, configure_logging
 
-    return create_app(build_services())
+    services = build_services()
+    configure_logging(services.settings.data_dir / "logs")
+    return create_app(services)

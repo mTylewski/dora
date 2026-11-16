@@ -75,7 +75,23 @@
     }, 0);
   }
 
+  // Login page: if the user logs in in another window (the launcher opens the app and the
+  // evaluation window together), this window continues to its page without a second login.
+  function watchLoginElsewhere(target) {
+    function check() {
+      if (document.visibilityState !== "visible") return;
+      fetch("/session", { credentials: "same-origin", cache: "no-store" }).then(function (res) {
+        if (res.status === 204) window.location.href = target;
+      }).catch(function () {});
+    }
+    window.addEventListener("focus", check);
+    document.addEventListener("visibilitychange", check);
+    setInterval(check, 4000);
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
+    var login = document.querySelector("[data-login-next]");
+    if (login) watchLoginElsewhere(login.getAttribute("data-login-next") || "/");
     var busyForms = document.querySelectorAll("form[data-busy]");
     for (var b = 0; b < busyForms.length; b++) busyForms[b].addEventListener("submit", onBusySubmit);
     var inputs = document.querySelectorAll('input[data-format="amount"]');

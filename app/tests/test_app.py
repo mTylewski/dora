@@ -371,3 +371,280 @@ def test_progress_is_shown_while_processing(env):
     page = c.get(f"/cases/{case_id}").text
     assert "spinner" in page and '<progress class="progress" max="100" value="40">' in page
     assert "OCR: strona 3 z 27" in page and 'http-equiv="refresh" content="3"' in page
+
+
+def test_document_without_text_blocks_approval(env):
+    c, services, tmp = env["client"], env["services"], env["tmp"]
+    login(c, env["admin"])
+    blank = write_pdf(tmp / "skan.pdf", ["", ""]).read_bytes()  # scan without OCR: no text at all
+    token = csrf(c, "/cases/new")
+    r = c.post("/cases", data={"title": "Skan", "as_of": "2024-04-10", "csrf": token},
+               files=[("files", ("skan_umowy.pdf", blank, "application/pdf"))], follow_redirects=False)
+    case_url = r.headers["location"]
+    page = c.get(case_url).text
+    assert "skan_umowy.pdf" in page  # original file name, not the stored uuid
+    assert "nie zawiera odczytanego tekstu" in page and "OCR (Tesseract" in page
+    assert 'disabled class="blocked"' in page
+
+    r = c.post(f"{case_url}/approve", data={"csrf": csrf(c, case_url)}, follow_redirects=False)
+    assert r.status_code == 409
+    assert env["llm"].calls == []
+    case_id = case_url.rsplit("/", 1)[1]
+    with services.sessions() as db:
+        assert db.get(Case, case_id).status == "awaiting_approval"
+
+
+def test_document_without_text_is_not_auto_approved(env):
+    services, tmp = env["services"], env["tmp"]
+    import dataclasses
+    services.settings = dataclasses.replace(services.settings, require_anon_approval=False)
+    with services.sessions() as db:
+        admin = db.get(type(env["admin"]), env["admin"].id)
+    case_id = services.create_case(admin, "x", [("a.pdf", write_pdf(tmp / "a.pdf", [""]).read_bytes())],
+                                   dt.date(2024, 4, 10))
+    with services.sessions() as db:
+        assert db.get(Case, case_id).status == "awaiting_approval"
+    assert env["llm"].calls == []
+
+
+def test_some_empty_pages_warn_but_allow_approval(env):
+    c, tmp = env["client"], env["tmp"]
+    login(c, env["admin"])
+    pdf = write_pdf(tmp / "umowa.pdf", PAGES + [""]).read_bytes()
+    token = csrf(c, "/cases/new")
+    r = c.post("/cases", data={"title": "x", "as_of": "2024-04-10", "csrf": token},
+               files=[("files", ("umowa.pdf", pdf, "application/pdf"))], follow_redirects=False)
+    case_url = r.headers["location"]
+    page = c.get(case_url).text
+    assert f"brak tekstu na stronach {len(PAGES) + 1}" in page
+    assert 'class="blocked"' not in page
+    r = c.post(f"{case_url}/approve", data={"csrf": csrf(c, case_url)}, follow_redirects=False)
+    assert r.status_code == 303
+
+
+def test_confirmed_missing_value_is_not_shown_as_ok(env):
+    c, services, tmp = env["client"], env["services"], env["tmp"]
+    login(c, env["admin"])
+    with services.sessions() as db:
+        admin = db.get(type(env["admin"]), env["admin"].id)
+    case_id = services.create_case(admin, "x", [("a.pdf", write_pdf(tmp / "a.pdf", PAGES).read_bytes())],
+                                   dt.date(2024, 4, 10))
+    services.approve(case_id, admin.id)
+    services.correct(case_id, "agreement_date", "", admin.id)  # lawyer confirms the empty field
+    with services.sessions() as db:
+        view = services.case_view(db.get(Case, case_id))
+    fields = {f["path"]: f for f in view["fields"]}
+    assert fields["agreement_date"]["absent"] and fields["agreement_date"]["corrected"]
+    assert not fields["price_gross"]["absent"]
+    page = c.get(f"/cases/{case_id}").text
+    assert "potwierdzony brak w dokumencie" in page and "brak w dokumencie" in page
+
+
+def test_usage_is_recorded_and_reported(env):
+    c, services, tmp = env["client"], env["services"], env["tmp"]
+    login(c, env["admin"])
+    with services.sessions() as db:
+        admin = db.get(type(env["admin"]), env["admin"].id)
+    case_id = services.create_case(admin, "x", [("a.pdf", write_pdf(tmp / "a.pdf", PAGES + [""]).read_bytes())],
+                                   dt.date(2024, 4, 10), case_number="EVAL/1")
+    services.approve(case_id, admin.id)
+    services.correct(case_id, "price_gross", "450000,00", admin.id)   # confirmation
+    services.correct(case_id, "penalty_rate", "0,0003", admin.id)     # correction
+
+    from app.db import CaseRun, LlmCall
+    with services.sessions() as db:
+        calls = list(db.scalars(select(LlmCall).where(LlmCall.case_id == case_id)))
+        runs = {r.stage: r for r in db.scalars(select(CaseRun).where(CaseRun.case_id == case_id))}
+    assert [x.step for x in calls] == ["classify", "extract", "clauses"]
+    assert all(x.outcome == "ok" and x.input_tokens == 10 and x.output_tokens == 5 for x in calls)
+    # steps use the models from config/models.yaml; 10 in x $1 + 5 out x $5 per 1M = 35 micro-dollars (Haiku)
+    assert calls[0].model == "claude-haiku-4-5-20251001" and calls[0].cost_microusd == 35
+    assert all(x.cost_microusd and x.cost_microusd > 0 for x in calls)
+    prep, analysis = runs["prepare"], runs["analyze"]
+    assert (prep.outcome, prep.documents, prep.pages, prep.empty_pages) == ("ok", 1, len(PAGES) + 1, 1)
+    assert prep.replacements >= 2
+    assert analysis.outcome == "ok" and analysis.fields_total > 0 and analysis.clause_flags == 1
+    assert analysis.fields_empty > 0
+
+    page = c.get("/admin/usage").text
+    assert "Zużycie i jakość" in page and "EVAL/1" in page and "claude-haiku-4-5-20251001" in page
+    assert "ceny niezweryfikowane" in page
+    assert "Stawka kary" in page and "100%" in page  # penalty_rate: corrected in 1 of 1 reviews
+
+    csv_calls = c.get("/admin/usage/llm_calls.csv")
+    assert csv_calls.headers["content-type"].startswith("text/csv")
+    assert "attachment" in csv_calls.headers["content-disposition"]
+    lines = csv_calls.text.lstrip("﻿").splitlines()
+    assert lines[0].startswith("at,case_id,step,attempt,model") and len(lines) == 4
+    reviews = c.get("/admin/usage/field_reviews.csv").text
+    assert "confirm,price_gross" in reviews and "correct,penalty_rate" in reviews
+    assert c.get("/admin/usage/case_runs.csv").text.lstrip("﻿").startswith("at,case_id,stage")
+    assert c.get("/admin/usage/secrets.csv").status_code == 404
+    # no document content or personal data in any export
+    everything = "".join(c.get(f"/admin/usage/{n}.csv").text for n in ("llm_calls", "case_runs", "field_reviews"))
+    assert PESEL not in everything and "Nowakowski" not in everything
+
+    # usage data stays after the case is deleted
+    services.delete_case(case_id, admin.id)
+    assert "(usunięta)" in c.get("/admin/usage").text
+
+
+def test_failed_analysis_is_recorded(env):
+    services, tmp = env["services"], env["tmp"]
+    from app.db import CaseRun, LlmCall
+    from pipeline.llm import LLMResponse
+    env["llm"].responses[:] = [LLMResponse(text="", stop_reason="refusal")]
+    with services.sessions() as db:
+        admin = db.get(type(env["admin"]), env["admin"].id)
+    case_id = services.create_case(admin, "x", [("a.pdf", write_pdf(tmp / "a.pdf", PAGES).read_bytes())],
+                                   dt.date(2024, 4, 10))
+    services.approve(case_id, admin.id)
+    with services.sessions() as db:
+        run = db.scalar(select(CaseRun).where(CaseRun.case_id == case_id, CaseRun.stage == "analyze"))
+        call = db.scalar(select(LlmCall).where(LlmCall.case_id == case_id))
+    assert (run.outcome, run.error_code) == ("error", "refusal")
+    assert call.outcome == "refusal"
+
+
+def test_usage_page_requires_admin(env):
+    c, services = env["client"], env["services"]
+    lawyer = create_user(services, "prawnik@example.com", PASSWORD, "lawyer")
+    login(c, lawyer)
+    assert c.get("/admin/usage").status_code == 403
+    assert c.get("/admin/usage/llm_calls.csv").status_code == 403
+
+
+def test_dashboard_shows_evaluation_panel_to_admin_only(env):
+    c, services, tmp = env["client"], env["services"], env["tmp"]
+    login(c, env["admin"])
+    with services.sessions() as db:
+        admin = db.get(type(env["admin"]), env["admin"].id)
+    case_id = services.create_case(admin, "x", [("a.pdf", write_pdf(tmp / "a.pdf", PAGES).read_bytes())],
+                                   dt.date(2024, 4, 10))
+    services.approve(case_id, admin.id)
+    services.correct(case_id, "penalty_rate", "0,0003", admin.id)
+    page = c.get("/").text
+    assert "Ewaluacja — ostatnie 30 dni" in page and 'href="/admin/usage"' in page
+    assert "przeanalizowane sprawy" in page and "Stawka kary</strong> (1/1)" in page
+
+    lawyer_client = TestClient(c.app)
+    lawyer = create_user(services, "prawnik2@example.com", PASSWORD, "lawyer")
+    login(lawyer_client, lawyer)
+    assert "Ewaluacja" not in lawyer_client.get("/").text
+
+
+def test_login_returns_to_requested_page_and_session_probe(env):
+    c, admin = env["client"], env["admin"]
+    r = c.get("/admin/usage", follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/login?next=%2Fadmin%2Fusage"
+    assert c.get("/session").status_code == 401
+    page = c.get("/login?next=/admin/usage").text
+    assert 'name="next" value="/admin/usage"' in page and 'data-login-next="/admin/usage"' in page
+
+    token = csrf(c, "/login")
+    c.post("/login", data={"email": admin.email, "password": PASSWORD, "csrf": token, "next": "/admin/usage"})
+    token = csrf(c, "/login/totp")
+    r = c.post("/login/totp", data={"code": pyotp.TOTP(admin.totp_secret).now(), "csrf": token},
+               follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/admin/usage"
+    assert c.get("/session").status_code == 204
+
+
+def test_local_mode_logs_in_automatically_only_from_this_computer(env):
+    import dataclasses
+    services = env["services"]
+    services.settings = dataclasses.replace(services.settings, local_auto_login="auto")
+    app = env["client"].app
+
+    local = TestClient(app, client=("127.0.0.1", 50000))
+    r = local.get("/admin/usage")
+    assert r.status_code == 200 and "Zużycie i jakość" in r.text
+    assert "tryb lokalny" in r.text and "Wyloguj" not in r.text
+    assert local.get("/login?next=/admin/usage", follow_redirects=False).headers["location"] == "/admin/usage"
+    assert local.get("/session").status_code == 204
+    with services.sessions() as db:
+        actions = [a.action for a in db.scalars(select(AccessLog))]
+    assert actions.count("login_local") == 1  # once per browser session, not per request
+
+    remote = TestClient(app, client=("192.168.1.20", 50000))
+    r = remote.get("/", follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/login"
+    assert "Logowanie" in remote.get("/login").text
+
+
+def test_local_mode_with_named_user_and_off_by_default(env):
+    import dataclasses
+    services = env["services"]
+    app = env["client"].app
+    local = TestClient(app, client=("127.0.0.1", 50000))
+    assert local.get("/", follow_redirects=False).status_code == 303  # default: normal login
+
+    create_user(services, "prawnik@example.com", PASSWORD, "lawyer")
+    services.settings = dataclasses.replace(services.settings, local_auto_login="Prawnik@Example.com")
+    r = TestClient(app, client=("::1", 50000)).get("/")
+    assert r.status_code == 200 and "prawnik@example.com" in r.text and "Ewaluacja" not in r.text
+
+    services.settings = dataclasses.replace(services.settings, local_auto_login="nobody@example.com")
+    assert TestClient(app, client=("127.0.0.1", 50001)).get("/", follow_redirects=False).status_code == 303
+
+
+def test_fixed_value_fields_are_drop_downs_and_confirm_without_change(env):
+    c, services, tmp = env["client"], env["services"], env["tmp"]
+    login(c, env["admin"])
+    with services.sessions() as db:
+        admin = db.get(type(env["admin"]), env["admin"].id)
+    case_id = services.create_case(admin, "x", [("a.pdf", write_pdf(tmp / "a.pdf", PAGES).read_bytes())],
+                                   dt.date(2024, 4, 10))
+    services.approve(case_id, admin.id)
+    url = f"/cases/{case_id}"
+    page = c.get(url).text
+    assert '<option value="percent_of_price_per_day" selected>% ceny za dzień</option>' in page
+    assert '<option value="handover_delay" selected>opóźnienie wydania lokalu</option>' in page
+    assert 'value="percent_of_price_per_day" placeholder' not in page  # no text box with the code
+
+    c.post(f"{url}/fields", data={"csrf": csrf(c, url), "path": "penalty_basis",
+                                  "value": "percent_of_price_per_day", "action": "correct"})
+    with services.sessions() as db:
+        fields = {f["path"]: f for f in services.case_view(db.get(Case, case_id))["fields"]}
+    assert fields["penalty_basis"]["corrected"] and not fields["penalty_basis"]["manual"]  # confirmation
+
+
+def test_implausible_daily_rate_is_flagged(env):
+    services, tmp = env["services"], env["tmp"]
+    with services.sessions() as db:
+        admin = db.get(type(env["admin"]), env["admin"].id)
+    case_id = services.create_case(admin, "x", [("a.pdf", write_pdf(tmp / "a.pdf", PAGES).read_bytes())],
+                                   dt.date(2024, 4, 10))
+    services.approve(case_id, admin.id)
+
+    def warnings():
+        with services.sessions() as db:
+            return " ".join(services.case_view(db.get(Case, case_id))["calculation"]["warnings"])
+
+    assert "Nietypowo wysoka" not in warnings()          # 0,02% from the document
+    services.correct(case_id, "penalty_rate", "0,02", admin.id)   # typo: 2% per day
+    assert "Nietypowo wysoka stawka: 2% ceny" in warnings() and "0,02%" in warnings()
+    services.correct(case_id, "penalty_rate", "0,02%", admin.id)  # what was meant
+    assert "Nietypowo wysoka" not in warnings()
+
+
+def test_sqlite_uses_wal_so_reads_do_not_block_writes(env):
+    import sqlite3
+    services, tmp = env["services"], env["tmp"]
+    with services.sessions() as db:
+        assert db.connection().exec_driver_sql("PRAGMA journal_mode").scalar() == "wal"
+    # an open read transaction elsewhere (like a page being read) must not block a write
+    reader = sqlite3.connect(str(tmp / "db.sqlite"))
+    reader.execute("BEGIN")
+    reader.execute("SELECT count(*) FROM users").fetchone()
+    with services.sessions() as db:
+        services.audit(db, None, None, "wal_check", None)
+        db.commit()
+    reader.close()
+
+
+def test_safe_next_blocks_open_redirects():
+    from app.main import safe_next
+    assert safe_next("/admin/usage?days=7") == "/admin/usage?days=7"
+    for bad in ("https://evil.example", "//evil.example", "/\\evil.example", "", None, "/login/totp"):
+        assert safe_next(bad) == "/"

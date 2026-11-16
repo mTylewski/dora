@@ -2,6 +2,7 @@
 #   powershell -ExecutionPolicy Bypass -File scripts\dev_server.ps1
 # Data (SQLite, uploaded PDFs, secrets) is kept in .\data (git-ignored).
 $ErrorActionPreference = "Stop"
+try { $Host.UI.RawUI.WindowTitle = "DORA - serwer (zamknij to okno, aby zatrzymac)" } catch {}
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 $data = Join-Path $root "data"
@@ -23,6 +24,9 @@ $env:CLAIMS_DATA_DIR = $data
 $env:CLAIMS_DATABASE_URL = "sqlite:///" + ($data -replace "\\", "/") + "/claims.db"
 $env:CLAIMS_SECURE_COOKIES = "false"
 $env:CLAIMS_REQUIRE_ANON_APPROVAL = "true"
+# Single user on this laptop: no password / 2FA for requests from this computer (first admin account).
+# The server listens on 127.0.0.1 only. Set to "" to require the normal login again.
+$env:CLAIMS_LOCAL_AUTO_LOGIN = "auto"
 
 # Claude API key and Tesseract from the user's Windows settings.
 $env:ANTHROPIC_API_KEY = [Environment]::GetEnvironmentVariable("ANTHROPIC_API_KEY", "User")

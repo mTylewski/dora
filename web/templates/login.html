@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="card narrow">
+<section class="card narrow" data-login-next="{{ next or '/' }}">
   <h1>Logowanie</h1>
+  {% if next and next != "/" %}<p class="muted small">Po zalogowaniu otworzy się żądana strona. Jeśli logujesz się w innym oknie, to okno przejdzie dalej samo.</p>{% endif %}
   <form method="post" action="/login" class="stack">
     <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="hidden" name="next" value="{{ next or '/' }}">
     <label>E-mail <input type="email" name="email" required autocomplete="username"></label>
     <label>Hasło <input type="password" name="password" required autocomplete="current-password"></label>
     <button>Dalej</button>

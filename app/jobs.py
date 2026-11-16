@@ -30,9 +30,11 @@ def use_services(services: Services | None) -> None:
 
 @lru_cache(maxsize=1)
 def _worker_services() -> Services:  # pragma: no cover - worker process
-    from app.factory import build_services
+    from app.factory import build_services, configure_logging
 
-    return build_services()
+    services = build_services()
+    configure_logging(services.settings.data_dir / "logs")
+    return services
 
 
 def services() -> Services:
