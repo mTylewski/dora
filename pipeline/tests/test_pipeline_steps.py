@@ -205,10 +205,24 @@ def test_calculate_blocking_without_price_or_basis():
     assert out.result is None and len(out.blocking) == 2
 
 
-def test_calculate_statutory_interest_with_empty_table_blocks():
+def test_calculate_statutory_interest_with_empty_table_blocks(tmp_path):
+    import shutil
+    from pipeline.settings import CONFIG_DIR
+    shutil.copy(CONFIG_DIR / "calculator.yaml", tmp_path / "calculator.yaml")
+    (tmp_path / "statutory_interest.yaml").write_text(
+        "kinds:\n  late_payment:\n    periods: []\n  statutory:\n    periods: []\n", encoding="utf-8")
     ex = extraction(penalty_basis={"value": "statutory_interest", "quote": "q", "page": 4})
-    out = calculate_from_extraction(ex, dt.date(2025, 1, 1))
+    out = calculate_from_extraction(ex, dt.date(2025, 1, 1), config_dir=tmp_path)
     assert out.result is None and "statutory_interest.yaml" in out.blocking[0]
+
+
+def test_calculate_statutory_interest_with_shipped_table_and_early_delay():
+    # The shipped table starts on 07.09.2023; an earlier delay is reported, not a server error.
+    ex = extraction(penalty_basis={"value": "statutory_interest", "quote": "q", "page": 4},
+                    handover_deadline={"value": "2023-08-01", "quote": "q", "page": 3})
+    out = calculate_from_extraction(ex, dt.date(2025, 1, 1))
+    assert out.result is not None and not out.result.penalties
+    assert any("brak stawki odsetek ustawowych" in s for s in out.result.skipped)
 
 
 def test_calculate_statutory_interest_with_filled_table(tmp_path):

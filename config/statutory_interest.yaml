@@ -16,6 +16,57 @@ kinds:
     legal_basis: "art. 359 § 2 KC — do potwierdzenia"
     periods: []
   # Odsetki ustawowe za opóźnienie (art. 481 § 2 KC) — legal basis to be confirmed.
+  # Copied on 2026-11-16 from the official PDFs (eli.gov.pl, operative sentence "ogłasza się, że od dnia ...
+  # wysokość odsetek ustawowych za opóźnienie wynosi ..."). Completeness checked against the Sejm ELI API
+  # (search: publisher=MP, title "odsetek ustawowych za opóźnienie"): no other Minister of Justice notice in
+  # this range. Commercial-transaction notices (art. 11c) are a different table and are NOT included.
+  # The last period is open (to: null): a later notice must be added here when it is published.
+  # Periods before 2023-09-07 are not entered; a delay starting earlier is reported as missing a rate.
   late_payment:
     legal_basis: "art. 481 § 2 KC — do potwierdzenia"
-    periods: []
+    periods:
+      - from: 2023-09-07
+        to: 2023-10-04
+        rate: "0.1150"
+        source: "M.P. 2023 poz. 1061 (Obwieszczenie MS z 27.09.2023) — od dnia 7 września 2023 r. 11,50%"
+        verified: false
+      - from: 2023-10-05
+        to: 2025-05-07
+        rate: "0.1125"
+        source: "M.P. 2023 poz. 1123 (Obwieszczenie MS z 16.10.2023) — od dnia 5 października 2023 r. 11,25%"
+        verified: false
+      - from: 2025-05-08
+        to: 2025-07-02
+        rate: "0.1075"
+        source: "M.P. 2025 poz. 540 (Obwieszczenie MS z 30.05.2025) — od dnia 8 maja 2025 r. 10,75%"
+        verified: false
+      - from: 2025-07-03
+        to: 2025-09-03
+        rate: "0.1050"
+        source: "M.P. 2025 poz. 685 (Obwieszczenie MS z 22.07.2025) — od dnia 3 lipca 2025 r. 10,50%"
+        verified: false
+      - from: 2025-09-04
+        to: 2025-10-08
+        rate: "0.1025"
+        source: "M.P. 2025 poz. 1015 (Obwieszczenie MS z 24.09.2025) — od dnia 4 września 2025 r. 10,25%"
+        verified: false
+      - from: 2025-10-09
+        to: 2025-11-05
+        rate: "0.1000"
+        source: "M.P. 2025 poz. 1136 (Obwieszczenie MS z 30.10.2025) — od dnia 9 października 2025 r. 10,00%"
+        verified: false
+      - from: 2025-11-06
+        to: 2025-12-03
+        rate: "0.0975"
+        source: "M.P. 2025 poz. 1192 (Obwieszczenie MS z 18.11.2025) — od dnia 6 listopada 2025 r. 9,75%"
+        verified: false
+      - from: 2025-12-04
+        to: 2026-03-04
+        rate: "0.0950"
+        source: "M.P. 2025 poz. 1308 (Obwieszczenie MS z 23.12.2025) — od dnia 4 grudnia 2025 r. 9,50%"
+        verified: false
+      - from: 2026-03-05
+        to: null
+        rate: "0.0925"
+        source: "M.P. 2026 poz. 367 (Obwieszczenie MS z 08.04.2026) — od dnia 5 marca 2026 r. 9,25%"
+        verified: false

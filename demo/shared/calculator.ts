@@ -169,7 +169,12 @@ export function computePenalty(
   const endLabel = ongoing ? `stan na dzień ${fmtDate(end)} (opóźnienie trwa)` : `data faktyczna ${fmtDate(end)}`;
   const inclusion = cfg.includeActualDate ? "wliczając" : "nie wliczając";
   r.steps.push({ label: "Dni opóźnienia", formula: `od ${fmtDate(first)} do ${endLabel}, ${inclusion} dnia końcowego`, result: String(days) });
-  if (ongoing) r.warnings.push(`Brak daty faktycznej — opóźnienie liczone na dzień ${fmtDate(asOf)}.`);
+  if (ongoing && end <= eff.deadline) {  // ISO dates compare correctly as strings
+    r.warnings.push(`Termin ${fmtDate(eff.deadline)} jeszcze nie upłynął na dzień ${fmtDate(end)} — ` +
+      "brak opóźnienia. Zmień „Wyliczenie na dzień”, aby policzyć karę na późniejszą datę.");
+  } else if (ongoing) {
+    r.warnings.push(`Brak daty faktycznej — opóźnienie liczone na dzień ${fmtDate(asOf)}.`);
+  }
   if (!cfg.verified) r.warnings.push("Sposób liczenia dni nie został potwierdzony przez prawnika (config/calculator.yaml).");
 
   if (terms.basis === "other") {

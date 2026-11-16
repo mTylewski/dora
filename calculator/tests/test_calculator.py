@@ -276,6 +276,37 @@ def test_statutory_interest_requires_table():
         penalty(Terms(Basis.STATUTORY_INTEREST, PRICE_500K))
 
 
+def test_deadline_not_passed_yet_is_explained():
+    terms = Terms(Basis.STATUTORY_INTEREST, 36_500_000, interest_table=VERIFIED_TABLE)
+    r = penalty(terms, D(2024, 6, 30), None, as_of=D(2024, 6, 1))
+    assert r.days == 0 and r.uncapped_grosze == 0
+    assert any("jeszcze nie upłynął" in w for w in r.warnings)
+    assert not any("Brak daty faktycznej" in w for w in r.warnings)
+
+
+def test_statutory_interest_before_first_period_is_a_calculation_error():
+    table = RateTable("t", (RatePeriod(D(2024, 1, 1), None, Decimal("0.1"), "", True),))
+    with pytest.raises(CalculationError, match="brak stawki odsetek ustawowych dla dnia 31.12.2023"):
+        statutory_interest(100, D(2023, 12, 31), D(2024, 1, 5), table, INCL)
+
+
+def test_shipped_late_payment_table_is_contiguous_and_matches_hand_calculation():
+    table = load_rate_table(Path(__file__).resolve().parents[2] / "config" / "statutory_interest.yaml",
+                            "late_payment")
+    periods = table.periods
+    assert periods[0].start == D(2023, 9, 7) and periods[-1].end is None
+    for prev, nxt in zip(periods, periods[1:]):
+        assert prev.end + dt.timedelta(days=1) == nxt.start  # no gaps
+    assert all(p.source.startswith("M.P. ") and not p.verified for p in periods)
+    # 900 000 zł = 90 000 000 gr, 01.03–10.03.2026 crosses the 05.03.2026 change (9,50% -> 9,25%):
+    # 01.03–04.03 (4 d): 90 000 000 × 9,50% × 4/365 =  93 698,630 gr
+    # 05.03–10.03 (6 d): 90 000 000 × 9,25% × 6/365 = 136 849,315 gr
+    # total 230 547,945 gr -> 230 548 gr = 2 305,48 zł
+    res = statutory_interest(90_000_000, D(2026, 3, 1), D(2026, 3, 10), table, INCL)
+    assert [(s.days, s.annual_rate) for s in res.segments] == [(4, Decimal("0.0950")), (6, Decimal("0.0925"))]
+    assert res.grosze == 230_548
+
+
 def test_rate_table_gap_raises():
     table = RateTable("t", (RatePeriod(D(2024, 1, 1), D(2024, 1, 31), Decimal("0.1"), "", True),))
     with pytest.raises(RateTableError):

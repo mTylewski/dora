@@ -42,6 +42,38 @@ class LLMResponse:
     input_tokens: int = 0
     output_tokens: int = 0
     content: list[Any] = field(default_factory=list)  # raw blocks, echoed back on retry
+    cache_creation_input_tokens: int = 0
+    cache_read_input_tokens: int = 0
+    model: str | None = None  # model that served the request (may differ after a refusal fallback)
+
+
+@dataclass(frozen=True)
+class CallRecord:
+    """Technical metadata of one API call (no document content). Sent to the client's
+    optional `record_call` hook so the app can store usage for evaluation."""
+
+    case_id: str
+    step: str
+    attempt: int
+    model: str
+    served_model: str | None
+    duration_ms: int
+    outcome: str  # ok | invalid_output | truncated | refusal | api_error_<status> | api_connection_error
+    stop_reason: str | None = None
+    input_tokens: int = 0
+    output_tokens: int = 0
+    cache_creation_input_tokens: int = 0
+    cache_read_input_tokens: int = 0
+
+
+def _emit(client: Any, record: CallRecord) -> None:
+    hook = getattr(client, "record_call", None)
+    if not callable(hook):
+        return
+    try:
+        hook(record)
+    except Exception:  # usage recording must never break the analysis
+        log.exception("case=%s step=%s usage_record_failed", record.case_id, record.step)
 
 
 class LLMClient(Protocol):
@@ -79,12 +111,16 @@ class AnthropicClient:
         with stream_cm as stream:
             message = stream.get_final_message()
         text = next((b.text for b in message.content if b.type == "text"), "")
+        usage = message.usage
         return LLMResponse(
             text=text,
             stop_reason=message.stop_reason,
-            input_tokens=message.usage.input_tokens,
-            output_tokens=message.usage.output_tokens,
+            input_tokens=usage.input_tokens,
+            output_tokens=usage.output_tokens,
             content=list(message.content),
+            cache_creation_input_tokens=getattr(usage, "cache_creation_input_tokens", None) or 0,
+            cache_read_input_tokens=getattr(usage, "cache_read_input_tokens", None) or 0,
+            model=getattr(message, "model", None),
         )
 
 
@@ -103,29 +139,52 @@ def call_structured(
     last_error = ""
     for attempt in (1, 2):
         started = time.monotonic()
+
+        def record(outcome: str, response: LLMResponse | None = None) -> None:
+            r = response
+            _emit(client, CallRecord(
+                case_id=case_id, step=step, attempt=attempt, model=settings.model,
+                served_model=r.model if r else None,
+                duration_ms=int((time.monotonic() - started) * 1000), outcome=outcome,
+                stop_reason=r.stop_reason if r else None,
+                input_tokens=r.input_tokens if r else 0, output_tokens=r.output_tokens if r else 0,
+                cache_creation_input_tokens=r.cache_creation_input_tokens if r else 0,
+                cache_read_input_tokens=r.cache_read_input_tokens if r else 0,
+            ))
+
         try:
             response = client.complete(settings, system, messages, schema)
         except anthropic.APIStatusError as exc:  # pragma: no cover - network
             log.warning("case=%s step=%s attempt=%d api_status=%s", case_id, step, attempt, exc.status_code)
+            record(f"api_error_{exc.status_code}")
             raise LLMError("api_error", str(exc.status_code)) from exc
         except anthropic.APIConnectionError as exc:  # pragma: no cover - network
             log.warning("case=%s step=%s attempt=%d api_connection_error", case_id, step, attempt)
+            record("api_connection_error")
             raise LLMError("api_connection_error") from exc
         log.info(
-            "case=%s step=%s attempt=%d model=%s ms=%d in_tokens=%d out_tokens=%d stop=%s",
+            "case=%s step=%s attempt=%d model=%s ms=%d in_tokens=%d out_tokens=%d "
+            "cache_write=%d cache_read=%d stop=%s",
             case_id, step, attempt, settings.model, int((time.monotonic() - started) * 1000),
-            response.input_tokens, response.output_tokens, response.stop_reason,
+            response.input_tokens, response.output_tokens, response.cache_creation_input_tokens,
+            response.cache_read_input_tokens, response.stop_reason,
         )
         if response.stop_reason == "refusal":
+            record("refusal", response)
             raise LLMError("refusal")
         if response.stop_reason == "max_tokens":
             last_error = "output truncated (max_tokens)"
+            record("truncated", response)
         else:
             try:
                 data = json.loads(response.text, parse_float=Decimal)
-                return output_model.model_validate(data)
+                result = output_model.model_validate(data)
             except (json.JSONDecodeError, ValidationError) as exc:
                 last_error = _short_error(exc)
+                record("invalid_output", response)
+            else:
+                record("ok", response)
+                return result
         log.warning("case=%s step=%s attempt=%d invalid_output", case_id, step, attempt)
         messages = messages + [
             {"role": "assistant", "content": response.content or [{"type": "text", "text": response.text}]},

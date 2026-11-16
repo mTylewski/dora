@@ -82,12 +82,36 @@ def edit_value(path: str, value: Any) -> str:
     return str(value)
 
 
+BOOL_FIELDS = ("exclusive_penalty_clause", "waiver_of_claims")
+NONE_LABEL = "— brak w dokumencie —"
+
+
+def edit_choices(path: str, value: Any) -> list[tuple[str, str, bool]] | None:
+    """Options (value sent to the server, Polish label, selected) for fields with a fixed set of
+    values, shown as a drop-down instead of a text box with internal codes. None = text box."""
+    if path == "penalty_basis":
+        options = [("", NONE_LABEL)] + list(BASIS_LABELS.items())
+    elif path == "penalty_events":
+        options = [("", NONE_LABEL)] + list(EVENT_LABELS.items()) + [
+            ("handover_delay, transfer_delay", "oba: " + " i ".join(EVENT_LABELS.values()))]
+        if isinstance(value, list):  # canonical order, as in the options
+            value = [e for e in EVENT_LABELS if e in value] + [e for e in value if e not in EVENT_LABELS]
+    elif path in BOOL_FIELDS:
+        options = [("", NONE_LABEL), ("tak", "tak"), ("nie", "nie")]
+    else:
+        return None
+    current = edit_value(path, value)
+    if current not in {code for code, _ in options}:  # unexpected value: keep it selectable, never lose it
+        options.append((current, display_value(path, value)))
+    return [(code, label, code == current) for code, label in options]
+
+
 def edit_hint(path: str) -> str:
     if path.startswith("annex_deadlines") or path.endswith("_date") or path.endswith("_deadline"):
         return "DD.MM.RRRR"
     return {
         "price_gross": "kwota w zł, np. 450000,00",
-        "penalty_rate": "ułamek dzienny (0,0002 = 0,02%) lub zł/dzień",
+        "penalty_rate": "np. 0,02% dziennie (albo ułamek 0,0002); przy stałej kwocie: zł/dzień",
         "penalty_basis": ", ".join(BASIS_LABELS),
         "penalty_cap": "np. 5% albo 20000; puste = brak",
         "penalty_events": "handover_delay, transfer_delay",

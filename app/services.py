@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime as dt
 import logging
 import shutil
+import time
 import uuid
 from dataclasses import asdict
 from pathlib import Path
@@ -24,7 +25,7 @@ from app.corrections import (
 )
 from app.crypto import Box
 from app import firm
-from app.db import AccessLog, Case, CaseDocument, Lawyer, User, utcnow
+from app.db import AccessLog, Case, CaseDocument, CaseRun, Lawyer, LlmCall, User, utcnow
 from pipeline.anonymize import restore
 from pipeline.calculate import FIELD_LABELS, calculate_from_extraction
 from pipeline.classify import DocumentClass
@@ -39,13 +40,22 @@ from pipeline.letter import (
     render_draft,
     template_placeholders,
 )
-from pipeline.llm import LLMClient, LLMError
+from pipeline.llm import CallRecord, LLMClient, LLMError
 from pipeline.pdf_text import OcrFn
 from pipeline.run import CaseAnalysis, PreparedCase, analysis_to_dict, analyze_case, prepare_case
 from pipeline.schema import Extraction
+from pipeline.usage import Pricing, default_pricing
 from pipeline.verify_quotes import Issue, QuoteIssue
 
 log = logging.getLogger("claims.app")
+
+# A page with fewer non-whitespace characters than this counts as having no text
+# (blank page, scan without OCR, OCR noise). Lower than the OCR trigger on purpose.
+MIN_PAGE_TEXT_CHARS = 10
+
+
+def page_has_text(text: str | None) -> bool:
+    return text is not None and len("".join(text.split())) >= MIN_PAGE_TEXT_CHARS
 
 
 class Queue:
@@ -67,6 +77,20 @@ class ThreadQueue(Queue):
         threading.Thread(target=super().enqueue, args=(job, case_id), daemon=True).start()
 
 
+class RecordingClient:
+    """Passes calls to the real client and hands each call's usage record to `sink`."""
+
+    def __init__(self, inner: LLMClient, sink: Callable[[CallRecord], None]) -> None:
+        self._inner = inner
+        self._sink = sink
+
+    def complete(self, settings, system, messages, schema):
+        return self._inner.complete(settings, system, messages, schema)
+
+    def record_call(self, record: CallRecord) -> None:
+        self._sink(record)
+
+
 class Services:
     def __init__(
         self,
@@ -76,6 +100,7 @@ class Services:
         queue: Any | None = None,
         ocr: OcrFn | None = None,
         detectors: list | None = None,
+        pricing: Pricing | None = None,
     ) -> None:
         self.settings = settings
         self.sessions = sessions
@@ -84,6 +109,35 @@ class Services:
         self.queue = queue or Queue()
         self.ocr = ocr
         self.detectors = detectors or []
+        self.pricing = pricing or default_pricing()
+
+    # --- usage records (technical metadata for evaluation, never document content) ---------
+
+    def _llm(self) -> RecordingClient:
+        return RecordingClient(self.llm_factory(), self.record_call)
+
+    def record_call(self, r: CallRecord) -> None:
+        priced = r.served_model if r.served_model in self.pricing.models else r.model
+        cost = self.pricing.cost_microusd(priced, r.input_tokens, r.output_tokens,
+                                          r.cache_creation_input_tokens, r.cache_read_input_tokens)
+        with self.sessions() as db:
+            db.add(LlmCall(case_id=r.case_id, step=r.step, attempt=r.attempt, model=r.model,
+                           served_model=r.served_model, duration_ms=r.duration_ms, outcome=r.outcome,
+                           stop_reason=r.stop_reason, input_tokens=r.input_tokens, output_tokens=r.output_tokens,
+                           cache_creation_input_tokens=r.cache_creation_input_tokens,
+                           cache_read_input_tokens=r.cache_read_input_tokens, cost_microusd=cost))
+            db.commit()
+
+    def _record_run(self, case_id: str, stage: str, started: float, error_code: str | None = None,
+                    **counts: int) -> None:
+        try:
+            with self.sessions() as db:
+                db.add(CaseRun(case_id=case_id, stage=stage, outcome="error" if error_code else "ok",
+                               error_code=error_code, duration_ms=int((time.monotonic() - started) * 1000),
+                               **counts))
+                db.commit()
+        except Exception:  # never let bookkeeping fail a case
+            log.exception("case=%s stage=%s run_record_failed", case_id, stage)
 
     # --- paths ------------------------------------------------------------------
 
@@ -136,14 +190,23 @@ class Services:
             if case is None:
                 return
             paths = [self.document_path(d) for d in case.documents]
+        started = time.monotonic()
         try:
             self._progress(case_id, "Rozpoczynanie odczytu dokumentów", 2)
             prepared = prepare_case(case_id, paths, ocr=self.ocr, detectors=self.detectors,
                                     progress=lambda text, pct: self._progress(case_id, text, pct))
         except Exception:
             log.exception("case=%s step=prepare failed", case_id)
+            self._record_run(case_id, "prepare", started, "prepare_failed", documents=len(paths))
             self._set_status(case_id, "error", "prepare_failed")
             return
+        self._record_run(
+            case_id, "prepare", started, documents=len(prepared.anonymized),
+            pages=sum(len(d.pages) for d in prepared.anonymized),
+            ocr_pages=sum(len(d.ocr_pages) for d in prepared.anonymized),
+            empty_pages=sum(1 for d in prepared.anonymized for p in d.pages if not page_has_text(p)),
+            replacements=len(prepared.replacements),
+        )
         payload = {
             "documents": [{"id": d.id, "filename": d.filename, "pages": d.pages, "ocr_pages": d.ocr_pages}
                           for d in prepared.anonymized],
@@ -156,7 +219,8 @@ class Services:
             case.prepared_enc = self.box.seal(payload)
             case.status = "awaiting_approval"
             db.commit()
-        if not self.settings.require_anon_approval:
+        # A document without text stays on the approval screen with an error instead of being sent.
+        if not self.settings.require_anon_approval and not self._blocking_text_problems(payload["documents"]):
             self.approve(case_id, user_id=None)
 
     def approve(self, case_id: str, user_id: int | None, ip: str | None = None) -> None:
@@ -164,6 +228,10 @@ class Services:
             case = db.get(Case, case_id)
             if case is None or case.status != "awaiting_approval":
                 raise ValueError("sprawa nie oczekuje na zatwierdzenie")
+            blocking = self._blocking_text_problems(self.box.open(case.prepared_enc)["documents"])
+            if blocking:
+                names = {d.doc_id: d.filename for d in case.documents}
+                raise ValueError("brak tekstu w dokumencie: " + ", ".join(names.get(i, i) for i in blocking))
             case.status = "analyzing"
             self.audit(db, user_id, case_id, "anonymization_approved", ip)
             db.commit()
@@ -181,17 +249,30 @@ class Services:
                 return
             prepared = self._prepared(case)
             as_of = case.as_of
+        started = time.monotonic()
         try:
-            analysis = analyze_case(self.llm_factory(), prepared, as_of,
+            analysis = analyze_case(self._llm(), prepared, as_of,
                                     progress=lambda text, pct: self._progress(case_id, text, pct))
         except LLMError as exc:
             log.warning("case=%s step=analyze error=%s", case_id, exc.code)
+            self._record_run(case_id, "analyze", started, exc.code)
             self._set_status(case_id, "error", exc.code)
             return
         except Exception:
             log.exception("case=%s step=analyze failed", case_id)
+            self._record_run(case_id, "analyze", started, "internal_error")
             self._set_status(case_id, "error", "internal_error")
             return
+        fields = [f for _, f in analysis.extraction.extraction.iter_fields()]
+        self._record_run(
+            case_id, "analyze", started, documents=len(prepared.anonymized),
+            pages=sum(len(d.pages) for d in prepared.anonymized),
+            fields_total=len(fields),
+            fields_empty=sum(1 for f in fields if f.value is None or f.value == []),
+            fields_needs_review=sum(1 for f in fields if f.needs_review),
+            quote_issues=len(analysis.extraction.issues) + len(analysis.clauses.issues),
+            clause_flags=len(analysis.clauses.flags),
+        )
         stored = {
             "classification": [c.model_dump(mode="json") for c in analysis.classification],
             "extraction": analysis.extraction.extraction.model_dump(mode="json"),
@@ -247,7 +328,26 @@ class Services:
     def anonymized_preview(self, case: Case) -> list[dict[str, Any]]:
         if not case.prepared_enc:
             return []
-        return self.box.open(case.prepared_enc)["documents"]
+        names = {d.doc_id: d.filename for d in case.documents}
+        documents = self.box.open(case.prepared_enc)["documents"]
+        for d in documents:
+            d["filename"] = names.get(d["id"], d["filename"])  # stored name is a random uuid
+        return documents
+
+    @staticmethod
+    def _blocking_text_problems(documents: list[dict[str, Any]]) -> list[str]:
+        """Ids of documents with no readable text on any page (scan without OCR, failed OCR)."""
+        return [d["id"] for d in documents if not any(page_has_text(p) for p in d["pages"])]
+
+    def text_report(self, case: Case) -> list[dict[str, Any]]:
+        """Documents with pages without readable text, shown on the approval screen."""
+        report = []
+        for d in self.anonymized_preview(case):
+            empty = [i for i, p in enumerate(d["pages"], start=1) if not page_has_text(p)]
+            if empty:
+                report.append({"id": d["id"], "filename": d["filename"], "empty_pages": empty,
+                               "page_count": len(d["pages"]), "blocking": len(empty) == len(d["pages"])})
+        return report
 
     def _analysis(self, case: Case) -> tuple[CaseAnalysis, Extraction, dict[str, str], dict[str, Any]]:
         stored = self.box.open(case.analysis_enc)
@@ -275,6 +375,7 @@ class Services:
             entry = corrections.get(f["path"])
             f["corrected"] = entry is not None
             f["manual"] = entry is not None and not entry.get("confirmed", False)
+            f["absent"] = f["value"] is None or f["value"] == []
             f["mismatch"] = f["manual"] and value_matches_quote(f["path"], f["value"], f["quote"]) is False
             f["quote_amount"] = (
                 amount_in_quote(f["quote"]) if f["path"] == "price_gross" and f["value"] is None else None
@@ -461,7 +562,7 @@ class Services:
             payment_deadline_days=int(form.get("payment_deadline_days") or 14),
         )
         with_justification = "justification" in template_placeholders(template.path)
-        draft = prepare_draft(self.llm_factory(), case_id, extraction, analysis.calculation, parties,
+        draft = prepare_draft(self._llm(), case_id, extraction, analysis.calculation, parties,
                               capped=bool(form.get("capped")), letter_date=dt.date.today(),
                               with_justification=with_justification)
         # The model saw only anonymized facts; put personal data back locally for editing.

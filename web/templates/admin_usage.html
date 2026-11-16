@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Zużycie — Analiza roszczeń{% endblock %}
+{% block content %}
+{% set t = report.total %}
+<h1>Zużycie i jakość</h1>
+<p class="muted">Dane techniczne do ewaluacji: wywołania modelu, czasy, tokeny, szacowany koszt, poprawki prawników.
+  Bez treści dokumentów i danych osobowych. Dane zostają po usunięciu sprawy.</p>
+
+<form method="get" class="row">
+  <label>Okres
+    <select name="days" onchange="this.form.submit()">
+      <option value="" {% if not days %}selected{% endif %}>cały</option>
+      {% for d in (1, 7, 30, 90) %}<option value="{{ d }}" {% if days == d %}selected{% endif %}>ostatnie {{ d }} dni</option>{% endfor %}
+    </select></label>
+  <noscript><button class="secondary">Pokaż</button></noscript>
+</form>
+
+<section class="card">
+  <h2>Podsumowanie</h2>
+  <table class="grid totals">
+    <tr><th>Sprawy z aktywnością</th><td>{{ report.cases|length }}</td></tr>
+    <tr><th>Wywołania modelu</th><td>{{ t.calls }} (udane {{ t.ok }}, nieudane {{ t.failed }}, ponowne próby {{ t.retries }})</td></tr>
+    <tr><th>Tokeny wejściowe / wyjściowe</th><td>{{ "{:,}".format(t.input_tokens).replace(",", " ") }} / {{ "{:,}".format(t.output_tokens).replace(",", " ") }}</td></tr>
+    <tr><th>Cache: zapis / odczyt</th><td>{{ "{:,}".format(t.cache_write).replace(",", " ") }} / {{ "{:,}".format(t.cache_read).replace(",", " ") }}</td></tr>
+    <tr><th>Szacowany koszt</th><td><strong>{{ usd(t.cost_microusd) }}</strong>{% if t.unpriced %} <span class="muted small">(+ {{ t.unpriced }} wywołań bez ceny w cenniku)</span>{% endif %}</td></tr>
+  </table>
+  <p class="muted small">Koszt liczony z <code>config/pricing.yaml</code> (stan {{ pricing.as_of or "?" }}{% if not pricing.verified %}, <strong>ceny niezweryfikowane</strong>{% endif %}).
+    Wiążący jest rachunek w konsoli Anthropic.</p>
+</section>
+
+<section class="card">
+  <h2>Według kroku i modelu</h2>
+  {% if not report.by_step %}<p class="muted">Brak wywołań w tym okresie.</p>{% else %}
+  <table class="grid">
+    <thead><tr><th>Krok</th><th>Model</th><th>Wywołania</th><th>Nieudane</th><th>Ponowne</th><th>Śr. czas</th><th>Tokeny we / wy</th><th>Cache odczyt</th><th>Koszt</th><th>Koszt / wywołanie</th></tr></thead>
+    <tbody>
+    {% for step, model, b in report.by_step %}
+      <tr><td>{{ step }}</td><td><code>{{ model }}</code></td><td>{{ b.calls }}</td><td>{{ b.failed }}</td><td>{{ b.retries }}</td>
+        <td>{{ "%.1f"|format(b.avg_s) }} s</td><td>{{ b.input_tokens }} / {{ b.output_tokens }}</td><td>{{ b.cache_read }}</td>
+        <td>{{ usd(b.cost_microusd) if not b.unpriced else "—" }}</td>
+        <td>{{ usd((b.cost_microusd / b.calls)|round|int) if b.calls and not b.unpriced else "—" }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Sprawy</h2>
+  {% if not report.cases %}<p class="muted">Brak spraw w tym okresie.</p>{% else %}
+  <table class="grid">
+    <thead><tr><th>Sprawa</th><th>Strony (OCR)</th><th>Odczyt</th><th>Analiza</th><th>Analizy (nieudane)</th><th>Pola do sprawdzenia</th><th>Pola puste</th><th>Klauzule</th><th>Przeglądy (poprawki)</th><th>Koszt</th><th>Ostatni błąd</th></tr></thead>
+    <tbody>
+    {% for c in report.cases %}
+      <tr><td>{% if c.exists %}<a href="/cases/{{ c.case_id }}">{{ c.case_number or c.case_id[:8] }}</a>{% else %}<span class="muted" title="sprawa usunięta">{{ c.case_number or c.case_id[:8] }} (usunięta)</span>{% endif %}</td>
+        <td>{{ c.pages if c.pages is not none else "—" }}{% if c.ocr_pages %} ({{ c.ocr_pages }}){% endif %}</td>
+        <td>{{ "%.0f s"|format(c.prepare_s) if c.prepare_s is not none else "—" }}</td>
+        <td>{{ "%.0f s"|format(c.analyze_s) if c.analyze_s is not none else "—" }}</td>
+        <td>{{ c.analyses }}{% if c.failed_analyses %} ({{ c.failed_analyses }}){% endif %}</td>
+        <td>{{ c.fields_needs_review if c.fields_needs_review is not none else "—" }}</td>
+        <td>{{ c.fields_empty if c.fields_empty is not none else "—" }}</td>
+        <td>{{ c.clause_flags if c.clause_flags is not none else "—" }}</td>
+        <td>{{ c.reviews }}{% if c.corrections %} ({{ c.corrections }}){% endif %}</td>
+        <td>{{ usd(c.llm.cost_microusd) if c.llm.calls else "—" }}</td>
+        <td>{{ c.last_error or "" }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Poprawki prawników według pól</h2>
+  <p class="muted small">„Potwierdzone” = prawnik zostawił wartość odczytaną z dokumentu, „poprawione” = wpisał inną.
+    Udział poprawek to przybliżona miara błędów ekstrakcji dla pola (tylko pola, które prawnik przejrzał).</p>
+  {% if not report.fields %}<p class="muted">Brak przeglądów w tym okresie.</p>{% else %}
+  <table class="grid">
+    <thead><tr><th>Pole</th><th>Potwierdzone</th><th>Poprawione</th><th>Przywrócone z dokumentu</th><th>Udział poprawek</th></tr></thead>
+    <tbody>
+    {% for f in report.fields %}
+      {% set base = f.field.split("[")[0] %}
+      <tr><td>{{ field_labels.get(base, base) }}{% if "[" in f.field %} <span class="muted small">{{ f.field[base|length:] }}</span>{% endif %}</td>
+        <td>{{ f.confirmed }}</td><td>{{ f.corrected }}</td><td>{{ f.reverted }}</td>
+        <td>{{ "%.0f%%"|format(f.corrected_share * 100) if f.corrected_share is not none else "—" }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Eksport do ewaluacji (CSV)</h2>
+  <ul>
+    <li><a href="/admin/usage/llm_calls.csv">llm_calls.csv</a> — każde wywołanie modelu: krok, model, próba, czas, tokeny, wynik, koszt (mikrodolary)</li>
+    <li><a href="/admin/usage/case_runs.csv">case_runs.csv</a> — etapy spraw: strony, OCR, puste strony, liczba anonimizacji, pola, flagi, błędy</li>
+    <li><a href="/admin/usage/field_reviews.csv">field_reviews.csv</a> — przeglądy pól przez prawników (potwierdzenie / poprawka / przywrócenie)</li>
+  </ul>
+  <p class="muted small">Plik logu technicznego: <code>data/logs/claims.log</code> na serwerze. Pobranie eksportu jest zapisywane w dzienniku dostępu.</p>
+</section>
+{% endblock %}

@@ -63,7 +63,7 @@ table.grid { width: 100%; border-collapse: collapse; background: var(--surface);
 table.grid th, table.grid td { border-bottom: 1px solid var(--border); padding: 8px; text-align: left; vertical-align: top; }
 tr.review td { background: #fffaf0; }
 td.quote { max-width: 380px; font-size: 13px; }
-td.edit input { width: 100%; }
+td.edit input, td.edit select { width: 100%; }
 td.edit { min-width: 180px; }
 table.totals { max-width: 480px; margin-top: 12px; }
 
@@ -90,7 +90,7 @@ textarea { font: inherit; padding: 6px 8px; border: 1px solid var(--border); bor
 .letter-edit input, .letter-edit textarea { font-weight: 400; }
 
 /* Field not yet confirmed or corrected by the lawyer */
-td.edit input.unconfirmed { border: 2px solid var(--error-text); background: var(--error-bg); }
+td.edit input.unconfirmed, td.edit select.unconfirmed { border: 2px solid var(--error-text); background: var(--error-bg); }
 
 /* Badges next to each other in the field label */
 .badge + .badge { margin-left: 4px; }
@@ -118,4 +118,12 @@ progress.progress::-webkit-progress-bar { background: var(--bg); }
 progress.progress::-webkit-progress-value { background: var(--accent); transition: width 0.6s ease; }
 progress.progress::-moz-progress-bar { background: var(--accent); }
 button:disabled { opacity: 0.85; cursor: progress; }
+button.blocked:disabled { opacity: 0.45; cursor: not-allowed; }
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } }
+
+/* Evaluation panel on the dashboard */
+.eval-panel { margin-bottom: 16px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 8px 0 12px; }
+.stat { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.stat-value { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stat-label { font-size: 12px; color: var(--muted); }

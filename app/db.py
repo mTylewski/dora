@@ -14,6 +14,7 @@ from sqlalchemy import (
     LargeBinary,
     String,
     create_engine,
+    event,
     inspect,
     text,
 )
@@ -130,9 +131,68 @@ class AccessLog(Base):
     ip: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
+class LlmCall(Base):
+    """One Claude API call (technical metadata only, never document content). Kept after the
+    case is deleted, so usage and cost can be evaluated over time."""
+
+    __tablename__ = "llm_calls"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    at: Mapped[dt.datetime] = mapped_column(DateTime, default=utcnow, index=True)
+    case_id: Mapped[str] = mapped_column(String(32), index=True)
+    step: Mapped[str] = mapped_column(String(32))  # classify | extract | clauses | letter
+    attempt: Mapped[int] = mapped_column(Integer)
+    model: Mapped[str] = mapped_column(String(64))
+    served_model: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    duration_ms: Mapped[int] = mapped_column(Integer)
+    outcome: Mapped[str] = mapped_column(String(32))
+    stop_reason: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    input_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    output_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    cache_creation_input_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    cache_read_input_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    cost_microusd: Mapped[int | None] = mapped_column(Integer, nullable=True)  # estimate, config/pricing.yaml
+
+
+class CaseRun(Base):
+    """One processing stage of a case (prepare = PDF/OCR/anonymization, analyze = API steps).
+    Counts only, no document content."""
+
+    __tablename__ = "case_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    at: Mapped[dt.datetime] = mapped_column(DateTime, default=utcnow, index=True)
+    case_id: Mapped[str] = mapped_column(String(32), index=True)
+    stage: Mapped[str] = mapped_column(String(16))  # prepare | analyze
+    outcome: Mapped[str] = mapped_column(String(16))  # ok | error
+    error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    duration_ms: Mapped[int] = mapped_column(Integer)
+    documents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    pages: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    ocr_pages: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    empty_pages: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    replacements: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    fields_total: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    fields_empty: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    fields_needs_review: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    quote_issues: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    clause_flags: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
 def make_sessionmaker(database_url: str) -> sessionmaker:
-    connect_args = {"check_same_thread": False} if database_url.startswith("sqlite") else {}
+    is_sqlite = database_url.startswith("sqlite")
+    # SQLite (local single-user run): wait up to 30 s for a lock instead of failing after 5 s.
+    connect_args = {"check_same_thread": False, "timeout": 30} if is_sqlite else {}
     engine = create_engine(database_url, connect_args=connect_args, pool_pre_ping=True)
+    if is_sqlite and ":memory:" not in database_url:
+        @event.listens_for(engine, "connect")
+        def _sqlite_wal(dbapi_connection, _record) -> None:
+            # WAL: readers do not block the writer, so page refreshes and the background analysis
+            # (progress updates, audit log) do not collide with "database is locked".
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+            cursor.close()
     Base.metadata.create_all(engine)
     _add_missing_columns(engine)
     return sessionmaker(engine, expire_on_commit=False)

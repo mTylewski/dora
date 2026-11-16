@@ -23,6 +23,9 @@ class Settings:
     require_anon_approval: bool
     secure_cookies: bool
     max_upload_mb: int
+    # Local single-user mode (scripts/dev_server.ps1 only): requests from this computer are logged
+    # in automatically as this user ("auto" = first active admin). Never set on a shared server.
+    local_auto_login: str | None = None
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -40,4 +43,5 @@ class Settings:
             require_anon_approval=_bool("CLAIMS_REQUIRE_ANON_APPROVAL", True),
             secure_cookies=_bool("CLAIMS_SECURE_COOKIES", True),
             max_upload_mb=int(os.environ.get("CLAIMS_MAX_UPLOAD_MB", "50")),
+            local_auto_login=os.environ.get("CLAIMS_LOCAL_AUTO_LOGIN", "").strip() or None,
         )
